@@ -1,0 +1,74 @@
+---
+title: "Enrollment"
+author: "Nicholas Paisley"
+date: "2/16/2021"
+output: html_document
+---
+
+
+```{r, package install}
+install.packages('tidyverse', dependencies = TRUE)
+library(tidyverse)
+library(stringr)
+library(ggplot2)
+library(lubridate)
+```
+
+
+```{r}
+E <- read_csv("enrollment.csv")
+class(E)
+```
+```{r}
+head(E)
+```
+
+```{r}
+glimpse(E)
+```
+
+```{r}
+#FTPT <- E %>% select(full_time, part_time) 
+```
+
+```{r}
+glimpse(FTPT)
+```
+
+
+```{r}
+ggplot(E, aes(x=year, y=total)) + geom_point(aes(y=full_time, color = "full_time")) + geom_point(aes(y=part_time, color = "part_time")) + labs(title = "Full-Time vs Part-Time" , x="Years", y="Total Students") + theme_classic()
+ggsave(file = "students.pdf", width=15, height=6, dpi=300)
+```
+```{r}
+library(reshape2)
+```
+```{r}
+glimpse(FTPT1)
+```
+
+
+```{r}
+FTPT1 <- melt(E, id.vars="year" , measure.vars=c("full_time", "part_time"))
+ggplot(FTPT1, aes(x = year, y = value, fill = variable)) +  
+theme_classic() + #get rid of gridlines
+geom_bar(position="stack",stat="identity") + #creating stacked bar
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) + #Shifting the x-axis labels
+labs(title = "Stockton University Undergraduate Enrollment Status" , x="Years", y="Total Students") + 
+scale_fill_manual(values = c("red" , "darkred"), name = "", labels = c("Full Time", "Part Time")) 
+```
+```{r}
+#Based on the data you have, who is your audience that would benefit from this information. Would your audience have the appropriate knowledge to understand the graphic you produced? 
+ 
+#The audience that would benefit from this information would be the school themselves and the students. For the school, knowing the density of students will give you rough estimates of graduate dates for a set of students. This will allow the window to enroll new students into the school. For the students, it allows to feel out what your classmates are doing, at least for work load purposes.I believe that the audience would have proper knowledge to understand the graph because of the simplicity of it. It allows to show exactly what it is designed for, to show the enrollment status of the full time and part time students.
+
+#Discuss the modifications done to your work?
+
+#1. I melted the data. This basically means that I grabbed particularly data from the original data frame to create a new data frame so I could graph the appropriate data that I needed. 
+#2. I removed the gridlines to make the graph more visually appealing.
+#3. I made the graph a stacked bar graph to allow a better representation of the data.
+#4. I adjusted the x-axis to an angle to allow it to be read better (I did not change the names of the x-axis points because I did not know if we could manipulate the data in that way for this assignment).
+#5.Gave the graph a title and x and y axis labels.
+#6. Changed the color of the graph and the names of the legend to better represent the data (I choose red just because it is my favorite color). 
+```
+

@@ -1,0 +1,204 @@
+---
+title: "Storyboard Commentary"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+    theme : bootstrap
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(ggfortify)
+library(reshape2)
+library(flexdashboard)
+
+Alien <- read.csv("nuforc_events.csv", header = TRUE)
+Alcohol <- read.csv("apparent_per_capita_alcohol_consumption_1977_2018.csv", header = TRUE)
+```
+
+
+```{r, breaking up each UFO sightings into regions, according to the U.S Census Bureau}
+Region1 <- Alien[Alien$State %in% c("CT","ME","MA","NH","RI","VT","NJ","NY","PA"), ]
+Region2 <- Alien[Alien$State %in% c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD"), ]
+Region3 <- Alien[Alien$State %in% c("DE","FL","GA","MD","NC","SC","VA","WV","AL","KY","MS","TN","AR","LA","OK","TX"),]
+Region4 <- Alien[Alien$State %in% c("AZ","CO","ID","MO","NV","NM","UT","WY","AK","CA","HI","OR","WA"),]
+```
+
+```{r}
+Alcohol2 <- Alcohol %>% select(state, year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r, grabbing all of Region 1s drink totals per capita from 1977-2017}
+CT <- Alcohol2 %>% filter(state == "connecticut", between(Alcohol2$year, 1977, 2017))
+CT2 <- CT %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+ME <- Alcohol2 %>% filter(state == "maine", between(Alcohol2$year, 1977, 2017))
+ME2 <- ME %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MA <- Alcohol2 %>% filter(state == "massachusetts", between(Alcohol2$year, 1977, 2017))
+MA2 <- MA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NH <- Alcohol2 %>% filter(state == "new hampshire", between(Alcohol2$year, 1977, 2017))
+NH2 <- NH %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+RI <- Alcohol2 %>% filter(state == "rhode island", between(Alcohol2$year, 1977, 2017))
+RI2 <- RI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+VT <- Alcohol2 %>% filter(state == "vermont", between(Alcohol2$year, 1977, 2017))
+VT2 <- VT %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NJ <- Alcohol2 %>% filter(state == "new jersey", between(Alcohol2$year, 1977, 2017))
+NJ2 <- NJ %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NY <- Alcohol2 %>% filter(state == "new york", between(Alcohol2$year, 1977, 2017))
+NY2 <- NY %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+PA <- Alcohol2 %>% filter(state == "pennsylvania", between(Alcohol2$year, 1977, 2017))
+PA2 <- PA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r, grabbing all of Region 2s drink totals per capita from 1977-2017}
+IL <- Alcohol2 %>% filter(state == "illinois", between(Alcohol2$year, 1977, 2017))
+IL2 <- IL %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+IN <- Alcohol2 %>% filter(state == "indiana", between(Alcohol2$year, 1977, 2017))
+IN2 <- IN %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MI <- Alcohol2 %>% filter(state == "michigan", between(Alcohol2$year, 1977, 2017))
+MI2 <- MI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+OH <- Alcohol2 %>% filter(state == "ohio", between(Alcohol2$year, 1977, 2017))
+OH2 <- OH %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WI <- Alcohol2 %>% filter(state == "wisconsin", between(Alcohol2$year, 1977, 2017))
+WI2 <- WI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+IA <- Alcohol2 %>% filter(state == "idaho", between(Alcohol2$year, 1977, 2017))
+IA2 <- IA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+KS <- Alcohol2 %>% filter(state == "kansas", between(Alcohol2$year, 1977, 2017))
+KS2 <- KS %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MN <- Alcohol2 %>% filter(state == "minnesota", between(Alcohol2$year, 1977, 2017))
+MN2 <- MN %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MO <- Alcohol2 %>% filter(state == "missouri", between(Alcohol2$year, 1977, 2017))
+MO2 <- MO %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NE <- Alcohol2 %>% filter(state == "new hampshire", between(Alcohol2$year, 1977, 2017))
+NE2 <- NE %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+ND <- Alcohol2 %>% filter(state == "north dakota", between(Alcohol2$year, 1977, 2017))
+ND2 <- ND %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+SD <- Alcohol2 %>% filter(state == "north dakota", between(Alcohol2$year, 1977, 2017))
+SD2 <- SD %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r, grabbing all of Region 3s drink totals per capita from 1977-2017}
+DE <- Alcohol2 %>% filter(state == "delaware", between(Alcohol2$year, 1977, 2017))
+DE2 <- DE %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+FL <- Alcohol2 %>% filter(state == "florida", between(Alcohol2$year, 1977, 2017))
+FL2 <- FL %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+GA <- Alcohol2 %>% filter(state == "georgia", between(Alcohol2$year, 1977, 2017))
+GA2 <- GA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MD <- Alcohol2 %>% filter(state == "maryland", between(Alcohol2$year, 1977, 2017))
+MD2 <- MD %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NC <- Alcohol2 %>% filter(state == "north carolina", between(Alcohol2$year, 1977, 2017))
+NC2 <- NC %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+SC <- Alcohol2 %>% filter(state == "south carolina", between(Alcohol2$year, 1977, 2017))
+SC2 <- SC %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+VA <- Alcohol2 %>% filter(state == "virginia", between(Alcohol2$year, 1977, 2017))
+VA2 <- VA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WV <- Alcohol2 %>% filter(state == "west virginia", between(Alcohol2$year, 1977, 2017))
+WV2 <- WV %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+AL <- Alcohol2 %>% filter(state == "alabama", between(Alcohol2$year, 1977, 2017))
+AL2 <- AL %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+KY <- Alcohol2 %>% filter(state == "kentucky", between(Alcohol2$year, 1977, 2017))
+KY2 <- KY %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MS <- Alcohol2 %>% filter(state == "mississippi", between(Alcohol2$year, 1977, 2017))
+MS2 <- MS %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+TN <- Alcohol2 %>% filter(state == "tennessee", between(Alcohol2$year, 1977, 2017))
+TN2 <- TN %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+AR <- Alcohol2 %>% filter(state == "arkansas", between(Alcohol2$year, 1977, 2017))
+AR2 <- AR %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+LA <- Alcohol2 %>% filter(state == "louisiana", between(Alcohol2$year, 1977, 2017))
+LA2 <- LA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+OK <- Alcohol2 %>% filter(state == "oklahoma", between(Alcohol2$year, 1977, 2017))
+OK2 <- OK %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+TX <- Alcohol2 %>% filter(state == "texas", between(Alcohol2$year, 1977, 2017))
+TX2 <- TX %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r, grabbing all of Region 4s drink totals per capita from 1977-2017}
+AZ <- Alcohol2 %>% filter(state == "arizona", between(Alcohol2$year, 1977, 2017))
+AZ2 <- AZ %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+CO <- Alcohol2 %>% filter(state == "colorado", between(Alcohol2$year, 1977, 2017))
+CO2 <- CO %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+ID <- Alcohol2 %>% filter(state == "idaho", between(Alcohol2$year, 1977, 2017))
+ID2 <- ID %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MO <- Alcohol2 %>% filter(state == "missouri", between(Alcohol2$year, 1977, 2017))
+MO2 <- MO %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NV <- Alcohol2 %>% filter(state == "nevada", between(Alcohol2$year, 1977, 2017))
+NV2 <- NV %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NM <- Alcohol2 %>% filter(state == "new mexico", between(Alcohol2$year, 1977, 2017))
+NM2 <- NM %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+UT <- Alcohol2 %>% filter(state == "utah", between(Alcohol2$year, 1977, 2017))
+UT2 <- UT %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WY <- Alcohol2 %>% filter(state == "wyoming", between(Alcohol2$year, 1977, 2017))
+WY2 <- WY %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+AK <- Alcohol2 %>% filter(state == "alaska", between(Alcohol2$year, 1977, 2017))
+AK2 <- AK %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+CA <- Alcohol2 %>% filter(state == "california", between(Alcohol2$year, 1977, 2017))
+CA2 <- CA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+HI <- Alcohol2 %>% filter(state == "hawaii", between(Alcohol2$year, 1977, 2017))
+HI2 <- HI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+OR <- Alcohol2 %>% filter(state == "oregon", between(Alcohol2$year, 1977, 2017))
+OR2 <- OR %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WA <- Alcohol2 %>% filter(state == "washington", between(Alcohol2$year, 1977, 2017))
+WA2 <- WA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+
+```{r, Readusted! Creating Region based datasets average number of beers, glasses of wine, shots of liqour, drinks total and sightings }
+R1DF <- data.frame("State"= c("CT","ME","MA", "NH", "RI", "VT", "NJ", "NY", "PA"), "Average Drinks Total" = c(mean(CT2$number_of_drinks_total),mean(ME2$number_of_drinks_total),mean(MA2$number_of_drinks_total),mean(NH2$number_of_drinks_total),mean(RI2$number_of_drinks_total),mean(VT2$number_of_drinks_total),mean(NJ2$number_of_drinks_total),mean(NY2$number_of_drinks_total),mean(PA2$number_of_drinks_total)), "Sightings" = strtoi(c("1251","830","1836","786","421","428","1979","4153","3429"), base = 0L))
+
+R2DF <- data.frame("State"= c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD"), "Average Drinks Total" = c(mean(IL2$number_of_drinks_total),mean(IN2$number_of_drinks_total),mean(MI2$number_of_drinks_total),mean(OH2$number_of_drinks_total),mean(WI2$number_of_drinks_total),mean(IA2$number_of_drinks_total),mean(KS2$number_of_drinks_total),mean(MN2$number_of_drinks_total),mean(MO2$number_of_drinks_total),mean(NE2$number_of_drinks_total),mean(ND2$number_of_drinks_total),mean(SD2$number_of_drinks_total)), "Sightings" = strtoi(c("3273","1747","2682","3119","1787","892","840","1462","2033","498","175","271"), base = 0L))
+
+R3DF <-  data.frame("State"= c("DE","FL","GA","MD","NC","SC","VA","WV","AL","KY","MS","TN","AR","LA","OK","TX"),  "Average Drinks Total" = c(mean(DE2$number_of_drinks_total),mean(FL2$number_of_drinks_total),mean(GA2$number_of_drinks_total),mean(MD2$number_of_drinks_total),mean(NC2$number_of_drinks_total),mean(SC2$number_of_drinks_total),mean(VA2$number_of_drinks_total),mean(WV2$number_of_drinks_total),mean(AL2$number_of_drinks_total),mean(KY2$number_of_drinks_total),mean(MS2$number_of_drinks_total),mean(TN2$number_of_drinks_total),mean(AR2$number_of_drinks_total),mean(LA2$number_of_drinks_total),mean(OK2$number_of_drinks_total),mean(TX2$number_of_drinks_total)), "Sightings" = strtoi(c("277","5771","1867","1281","2623","1582","1880","642","937","1145","546","1628","819","826","1000","4485"), base = 0L))
+
+R4DF <- data.frame("State"= c("AZ","CO","ID","MO","NV","NM","UT","WY","AK","CA","HI","OR","WA"), "Average Drinks Total" = c(mean(AZ2$number_of_drinks_total),mean(CO2$number_of_drinks_total),mean(ID2$number_of_drinks_total),mean(MO2$number_of_drinks_total),mean(NV2$number_of_drinks_total),mean(NM2$number_of_drinks_total),mean(UT2$number_of_drinks_total),mean(WY2$number_of_drinks_total),mean(AK2$number_of_drinks_total),mean(CA2$number_of_drinks_total),mean(HI2$number_of_drinks_total),mean(OR2$number_of_drinks_total),mean(WA2$number_of_drinks_total)), "Sightings" = strtoi(c("3693","2161","845","2033","1231","1134","1002","275","486","12200","481","2547","5351"), base = 0L))
+
+ALLRegions <- data.frame("Region" = c("Northeast","Midwest", "South", "West"), "Average Drinks Total" = c(mean(R1DF$Average.Drinks.Total), mean(R2DF$Average.Drinks.Total), mean(R3DF$Average.Drinks.Total), mean(R4DF$Average.Drinks.Total)), "Sightings" = c(mean(R1DF$Sightings), mean(R2DF$Sightings), mean(R3DF$Sightings), mean(R4DF$Sightings)))
+```
+
+```{r}
+#R1DF2 <- R1DF %>% mutate_at(c(2:6), funs(scale(.,center=FALSE))) 
+
+R1DF3 <- R1DF %>% mutate_at(c(2:3), funs(scale(.))) #standard deviation (scale() defaults to SD?)
+
+R2DF2 <- R2DF  %>% mutate_at(c(2:3), funs(scale(.)))
+
+R3DF2 <- R3DF  %>% mutate_at(c(2:3), funs(scale(.)))
+
+R4DF2 <- R4DF  %>% mutate_at(c(2:3), funs(scale(.)))
+```
+
+```{r}
+df1 <- melt(R1DF3, id.vars = "State" , variable.name =  'series')
+
+df2 <- melt(R2DF2, id.vars = "State" , variable.name =  'series')
+
+df3 <- melt(R3DF2, id.vars = "State" , variable.name =  'series')
+
+df4 <- melt(R4DF2, id.vars = "State" , variable.name =  'series')
+
+dfALL <- melt(ALLRegions, id.vars = "Region" , variable.name =  'series')
+
+#df3 <- melt(R1DF2, id.vars = "State" , variable.name =  'series')
+```
+
+---
+
+### Frame 1 {data-commentary-width=400}
+
+```{r}
+ggplot(data = df1, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge") +
+  labs(caption = "Northeat")
+```
+```{r}
+print(R1DF)
+```
+
+
+### Frame 2 {data-commentary-width=400}
+
+```{r}
+```
+
+*** 
+
+Some commentary about Frame 2.

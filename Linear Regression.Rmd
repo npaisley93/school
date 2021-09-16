@@ -1,0 +1,74 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+data1 <- read.csv("TrainData_Group1.csv", header = TRUE)
+```
+
+```{r}
+str(data1)
+```
+
+```{r}
+summary(data1)
+```
+
+
+```{r}
+plot(data1$X1,data1$Y)
+```
+
+```{r}
+df = subset(data1, select = c("X1","X2", "X3","X4","X5"))
+```
+
+y=βX+ϵ
+
+where ‘y’ is a vector of the response variable, ‘X’ is the matrix of our feature variables (sometimes called the ‘design’ matrix), and β is a vector of parameters that we want to estimate. ϵ is the error term; it represents features that affect the response, but are not explicitly included in our model.
+
+```{r}
+x <- as.matrix(data1[-ncol(data1)])
+y <- data1$Y
+summary(x)
+summary(y)
+```
+
+```{r}
+int <- rep(1, length(y))
+summary(int)
+```
+
+```{r}
+x <- cbind(int,x)
+```
+
+```{r}
+B <- solve(t(x) %*% x) %*% t(x) %*% y
+```
+
+
+```{r}
+B <- round(B,2)
+print(B)
+```
+```{r}
+# Linear regression model
+lm.mod <- lm(y ~ ., data=df)
+
+# Round for easier viewing
+lm.B <- round(lm.mod$coefficients, 2)
+
+# Create data.frame of results
+results <- data.frame(our.results=B, lm.results=lm.B)
+
+print(results)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

@@ -1,0 +1,103 @@
+---
+title: "Alcohol"
+author: "Nicholas Paisley"
+date: "4/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+Alcohol <- read.csv("apparent_per_capita_alcohol_consumption_1977_2018.csv", header = TRUE)
+```
+
+```{r}
+library(ggfortify)
+library(reshape2)
+```
+
+```{r}
+glimpse(Alcohol)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+Alcohol2 <- Alcohol %>% select(state, year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r}
+Alcohol2 <- Alcohol2  %>% filter(between(Alcohol2$year, 1977, 2017))
+Alabama <- Alcohol2 %>% filter(state == "alabama", between(Alcohol2$year, 1977, 2017))
+Alabama2 <- Alabama %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+Alabama3 <-  Alabama2 %>% left_join(AlabamaSightings, by="year")
+AlabamaBeer <- mean(Alabama$number_of_beers)
+AlabamaWine <- mean(Alabama$number_of_glasses_wine)
+AlabamaLiquor <- mean(Alabama$number_of_shots_liquor)
+AlabamaTotal <- mean(Alabama$number_of_drinks_total)
+#df <- melt(Alabama2, id.vars = "year" , measure.vars = c("number_of_beers","number_of_glasses_wine", "number_of_shots_liquor", "number_of_drinks_total"))
+df <- melt(Alabama3, id.vars = "year" , variable.name =  'series')
+df2 <- melt(R1DF, id.vars = "State" , variable.name =  'series')
+df3 <- melt(R1DF2, id.vars = "State" , variable.name =  'series')
+df4 <- melt(R1DF3, id.vars = "State" , variable.name =  'series')
+
+df5 <- melt(R2DF2, id.vars = "State" , variable.name =  'series')
+
+df6 <- melt(R3DF2, id.vars = "State" , variable.name =  'series')
+
+df7 <- melt(R4DF2, id.vars = "State" , variable.name =  'series')
+
+dfALL <- melt(ALLRegions2, id.vars = "Region" , variable.name =  'series')
+```
+
+```{r}
+ggplot(data = df3, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = df4, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = df5, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = df6, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = df7, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = dfALL, aes(Region, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+
+
+
+```{r}
+ggplot(data = df2, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+  #scale_y_discrete(limits = c(0,4600)) 
+```
+
+```{r}
+ggplot(data = df, aes(year, value)) +
+  geom_line(aes(color = series)) 
+
+  #facet_grid(series~.)
+```
+

@@ -1,0 +1,492 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(ggfortify)
+library(reshape2)
+```
+
+```{r}
+Alien <- read.csv("nuforc_events.csv", header = TRUE)
+Alcohol <- read.csv("apparent_per_capita_alcohol_consumption_1977_2018.csv", header = TRUE)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+glimpse(Alien)
+```
+
+```{r}
+unique(Alien$Year)
+```
+
+```{r}
+ggplot(Alien, aes(x=Year)) + scale_x_continuous(name="Years", limit=c(1960, 2021)) + geom_bar()
+```
+
+```{r}
+barplot(table(Alien$Year), las=2)
+```
+
+```{r}
+Alien1 <- subset(Alien, Year >= 1977)
+```
+
+```{r}
+ggplot(Alien, aes(x=Month)) + 
+geom_bar(fill="darkgreen") +
+theme_classic() + #get rid of gridlines
+labs(title = "Month Alien Visits" , x="Month", y="Number of Reports") + 
+scale_x_continuous(breaks = seq(1,12), labels=c("January" , "February", "March" , "April" , "May", "June" , "July", "August", "September", "October", "November", "December")) + 
+scale_y_continuous(limits = c(0,14000) , breaks = seq(0,14000,2000)) + 
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) #Shifting the x-axis labels
+```
+
+```{r}
+Alcohol2 <- Alcohol %>% select(state, year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+
+
+```{r}
+ggplot(Alien1, aes(x=Month)) + 
+geom_bar(fill="steelblue") +
+theme_classic() + #get rid of gridlines
+labs(title = "UFO Sightings Monthly From 1977 - 2017" , x="Month", y="Number of Reports") +
+scale_x_continuous(breaks = seq(1,12), labels=c("January" , "February", "March" , "April"
+,"May", "June" , "July", "August", "September", "October", "November", "December")) + 
+#Created a sequence and put the months in manually to help make the graph more presentable. 
+scale_y_continuous(limits = c(0,14000) , breaks = seq(0,14000,2000)) + 
+#changes the breaks in the graph and the scale (maximized for best viewing) 
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) #Shifting the x-axis labels
+```
+
+```{r}
+ggplot(Alien1, aes(x=Hour)) + 
+geom_bar(fill="springgreen4") +
+theme_classic() + #get rid of gridlines
+labs(title = "UFO Hourly Visits From 1977 - 2017" , x="Hour", y="Number of Reports") +
+scale_x_continuous(breaks = seq(0,23),labels=c("0","1","2","3","4","5","6","7","8",
+"9","10","11","12","13","14","15","16","17","18","19","20","21","22","23")) +
+#Created a sequence and put the hours in manually to help make the graph more presentable. 
+scale_y_continuous(limits = c(0,16000) , breaks = seq(0,16000,2000)) +
+#Changes the breaks in the graph and the scale (maximized for best viewing) 
+theme(axis.text.x = element_text(angle = 0, hjust = 1)) #Shifting the x-axis labels
+```
+
+```{r}
+test <- Alien %>% filter(Shape != "", Year >= 1960)
+```
+
+```{r}
+glimpse(test)
+```
+
+```{r}
+unique(Alien1$Year)
+```
+```{r}
+Alien %>% filter(Shape == "Crescent", Year >= 1960)
+```
+
+```{r}
+Alien %>% filter(Shape == "Changed", Year >= 1960)
+Alien %>% filter(Shape == "Crescent", Year >= 1960)
+Alien %>% filter(Shape == "Delta", Year >= 1960)
+Alien %>% filter(Shape == "Dome", Year >= 1960)
+Alien %>% filter(Shape == "Flare", Year >= 1960)
+Alien %>% filter(Shape == "Hexagon", Year >= 1960)
+Alien %>% filter(Shape == "Pyramid", Year >= 1960)
+Alien %>% filter(Shape == "Round", Year >= 1960)
+Alien %>% filter(Shape == "Triangular", Year >= 1960)
+```
+
+
+
+
+```{r}
+ggplot(test, aes(x=Shape)) + 
+geom_bar(fill="slategray4") +
+theme_classic() + #get rid of gridlines
+labs(title = "UFO Shape Report from 1960-2017" , x="Shape", y="Number of Reports", caption = "All 'missing' shape values have records, however, are small in comparision to the rest of the data") + 
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+```{r}
+ggplot(test, aes(x=State)) + 
+geom_bar(fill="darkgreen") +
+theme_classic() + #get rid of gridlines
+labs(title = "State Report from 1960-2017" , x="State", y="Number of Reports") + 
+coord_flip() + 
+#scale_x_discrete(guide = guide_axis(n.dodge=3)) +
+theme(axis.text.x = element_text(angle = 0, hjust = 1)) 
+```
+```{r}
+Region1 <- Alien[Alien$State %in% c("CT","ME","MA","NH","RI","VT","NJ","NY","PA"), ]
+Region2 <- Alien[Alien$State %in% c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD"), ]
+Region3 <- Alien[Alien$State %in% c("DE","FL","GA","MD","NC","SC","VA","WV","AL","KY","MS","TN","AR","LA","OK","TX"),]
+Region4 <- Alien[Alien$State %in% c("AZ","CO","ID","MO","NV","NM","UT","WY","AK","CA","HI","OR","WA"),]
+```
+
+```{r, Region 1}
+Alien %>% filter(State == "CT", between(Alien$Year, 1977, 2017)) #1251
+Alien %>% filter(State == "ME", between(Alien$Year, 1977, 2017)) #830
+Alien %>% filter(State == "MA", between(Alien$Year, 1977, 2017)) #1836
+Alien %>% filter(State == "NH", between(Alien$Year, 1977, 2017)) #786
+Alien %>% filter(State == "RI", between(Alien$Year, 1977, 2017)) #421
+Alien %>% filter(State == "VT", between(Alien$Year, 1977, 2017)) #428
+Alien %>% filter(State == "NJ", between(Alien$Year, 1977, 2017)) #1979
+Alien %>% filter(State == "NY", between(Alien$Year, 1977, 2017)) #4153
+Alien %>% filter(State == "PA", between(Alien$Year, 1977, 2017)) #3429
+```
+
+```{r, Region2}
+Alien %>% filter(State == "IL", between(Alien$Year, 1977, 2017)) #3273
+Alien %>% filter(State == "IN", between(Alien$Year, 1977, 2017)) #1747
+Alien %>% filter(State == "MI", between(Alien$Year, 1977, 2017)) #2682
+Alien %>% filter(State == "OH", between(Alien$Year, 1977, 2017)) #3119
+Alien %>% filter(State == "WI", between(Alien$Year, 1977, 2017)) #1787
+Alien %>% filter(State == "IA", between(Alien$Year, 1977, 2017)) #892
+Alien %>% filter(State == "KS", between(Alien$Year, 1977, 2017)) #840
+Alien %>% filter(State == "MN", between(Alien$Year, 1977, 2017)) #1462
+Alien %>% filter(State == "MO", between(Alien$Year, 1977, 2017)) #2033
+Alien %>% filter(State == "NE", between(Alien$Year, 1977, 2017)) #498
+Alien %>% filter(State == "ND", between(Alien$Year, 1977, 2017)) #175
+Alien %>% filter(State == "SD", between(Alien$Year, 1977, 2017)) #271
+```
+
+```{r ,"DE","FL","GA","MD","NC","SC","VA","WV","AL","KY","MS","TN","AR","LA","OK","TX"}
+Alien %>% filter(State == "DE", between(Alien$Year, 1977, 2017)) #277
+Alien %>% filter(State == "FL", between(Alien$Year, 1977, 2017)) #5771
+Alien %>% filter(State == "GA", between(Alien$Year, 1977, 2017)) #1867
+Alien %>% filter(State == "MD", between(Alien$Year, 1977, 2017)) #1281
+Alien %>% filter(State == "NC", between(Alien$Year, 1977, 2017)) #2623
+Alien %>% filter(State == "SC", between(Alien$Year, 1977, 2017)) #1582
+Alien %>% filter(State == "VA", between(Alien$Year, 1977, 2017)) #1880
+Alien %>% filter(State == "WV", between(Alien$Year, 1977, 2017)) #642
+Alien %>% filter(State == "AL", between(Alien$Year, 1977, 2017)) #937
+Alien %>% filter(State == "KY", between(Alien$Year, 1977, 2017)) #1145
+Alien %>% filter(State == "MS", between(Alien$Year, 1977, 2017)) #546
+Alien %>% filter(State == "TN", between(Alien$Year, 1977, 2017)) #1628
+Alien %>% filter(State == "AR", between(Alien$Year, 1977, 2017)) #819
+Alien %>% filter(State == "LA", between(Alien$Year, 1977, 2017)) #826
+Alien %>% filter(State == "OK", between(Alien$Year, 1977, 2017)) #1000
+Alien %>% filter(State == "TX", between(Alien$Year, 1977, 2017)) #4485
+```
+
+```{r,("AZ","CO","ID","MO","NV","NM","UT","WY","AK","CA","HI","OR","WA")}
+Alien %>% filter(State == "AZ", between(Alien$Year, 1977, 2017)) #3693
+Alien %>% filter(State == "CO", between(Alien$Year, 1977, 2017)) #2161
+Alien %>% filter(State == "ID", between(Alien$Year, 1977, 2017)) #845
+Alien %>% filter(State == "MO", between(Alien$Year, 1977, 2017)) #2033
+Alien %>% filter(State == "NV", between(Alien$Year, 1977, 2017)) #1231
+Alien %>% filter(State == "NM", between(Alien$Year, 1977, 2017)) #1134
+Alien %>% filter(State == "UT", between(Alien$Year, 1977, 2017)) #1002
+Alien %>% filter(State == "WY", between(Alien$Year, 1977, 2017)) #275
+Alien %>% filter(State == "AK", between(Alien$Year, 1977, 2017)) #486
+Alien %>% filter(State == "CA", between(Alien$Year, 1977, 2017)) #12200
+Alien %>% filter(State == "HI", between(Alien$Year, 1977, 2017)) #481
+Alien %>% filter(State == "OR", between(Alien$Year, 1977, 2017)) #2547
+Alien %>% filter(State == "WA", between(Alien$Year, 1977, 2017)) #5351
+```
+
+
+
+```{r}
+ggplot(Region1, aes(x=State)) + 
+geom_bar(fill="darkgreen") +
+theme_classic() + #get rid of gridlines
+labs(title = "Region 1 States From 1960-2017" , x="State", y="Number of Reports", caption = "Census Bureau-designated regions and divisions: Northeast") + 
+scale_y_continuous(limits = c(0,5000) , breaks = seq(0,5000,1000)) +
+theme(axis.text.x = element_text(angle = 45, hjust = 1),plot.caption=element_text(hjust = -.2)) 
+```
+
+```{r}
+ggplot(Region2, aes(x=State)) + 
+geom_bar(fill="darkgreen") +
+theme_classic() + #get rid of gridlines
+labs(title = "Region 2 States From 1960-2017" , x="State", y="Number of Reports",caption = "Census Bureau-designated regions and divisions: Midwest") + 
+scale_y_continuous(limits = c(0,4000) , breaks = seq(0,4000,1000),) +
+theme(axis.text.x = element_text(angle = 45, hjust = 1),plot.caption=element_text(hjust = -.2)) 
+```
+
+```{r}
+ggplot(Region3, aes(x=State)) + 
+geom_bar(fill="darkgreen") +
+theme_classic() + #get rid of gridlines
+labs(title = "Region 3 States From 1960-2017" , x="State", y="Number of Reports", caption = "Census Bureau-designated regions and divisions: South") + 
+scale_y_continuous(limits = c(0,6000) , breaks = seq(0,6000,1000))
+theme(axis.text.x = element_text(angle = 45, hjust = 1),plot.caption=element_text(hjust = -.2)) 
+```
+
+
+```{r}
+ggplot(Region4, aes(x=State)) + 
+geom_bar(fill="darkgreen") +
+theme_classic() + #get rid of gridlines
+labs(title = "Region 4 States From 1960-2017" , x="State", y="Number of Reports", caption = "Census Bureau-designated regions and divisions: West") + 
+scale_y_continuous(limits = c(0,14000) , breaks = seq(0,15000,2000)) +
+theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.caption=element_text(hjust = -.2))
+```
+```{r}
+Alien %>% filter(State == "CA", Year >= 1977)
+```
+
+```{r}
+ShapeNJ <- Alien[Alien$State %in% "NJ",]
+```
+
+```{r}
+glimpse(ShapeNJ)
+```
+```{r}
+ggplot(ShapeNJ, aes(x=Shape)) + 
+geom_bar(fill="darkgreen") +
+theme_classic() + #get rid of gridlines
+  labs(title = "NJ Shape 1960-2017" , x="Shape", y="Number of Reports", caption = "nj") +
+#scale_y_continuous(limits = c(0,14000) , breaks = seq(0,15000,2000)) +
+theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.caption=element_text(hjust = -.2))
+```
+```{r}
+#Region1 <- Alien[Alien$State %in% c("CT","ME","MA","NH","RI","VT","NJ","NY","PA"), ]
+AlienAlabama <- Alien %>% filter(State == "AL", between(Alien$Year, 1977, 2017))
+AlienCT <- Alien %>% filter(State == "CT", between(Alien$Year, 1977, 2017))
+AlienME <- Alien %>% filter(State == "ME", between(Alien$Year, 1977, 2017))
+```
+
+```{r}
+length(which(AlienAlabama$Year == 2017))
+length(which(AlienAlabama$Year == 2016))
+length(which(AlienAlabama$Year == 2015))     
+
+for ( i in 1977:2017) {
+  print(paste(i, length(which(AlienCT$Year == i))))
+ # sum(length(which(AlienCT$Year == i))
+}
+```
+
+
+```{r}
+#Region1 <- Alien[Alien$State %in% c("CT","ME","MA","NH","RI","VT","NJ","NY","PA"), ]
+CT <- Alcohol2 %>% filter(state == "connecticut", between(Alcohol2$year, 1977, 2017))
+CT2 <- CT %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+ME <- Alcohol2 %>% filter(state == "maine", between(Alcohol2$year, 1977, 2017))
+ME2 <- ME %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MA <- Alcohol2 %>% filter(state == "massachusetts", between(Alcohol2$year, 1977, 2017))
+MA2 <- MA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NH <- Alcohol2 %>% filter(state == "new hampshire", between(Alcohol2$year, 1977, 2017))
+NH2 <- NH %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+RI <- Alcohol2 %>% filter(state == "rhode island", between(Alcohol2$year, 1977, 2017))
+RI2 <- RI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+VT <- Alcohol2 %>% filter(state == "vermont", between(Alcohol2$year, 1977, 2017))
+VT2 <- VT %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NJ <- Alcohol2 %>% filter(state == "new jersey", between(Alcohol2$year, 1977, 2017))
+NJ2 <- NJ %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NY <- Alcohol2 %>% filter(state == "new york", between(Alcohol2$year, 1977, 2017))
+NY2 <- NY %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+PA <- Alcohol2 %>% filter(state == "pennsylvania", between(Alcohol2$year, 1977, 2017))
+PA2 <- PA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r}
+#Region2 <- Alien[Alien$State %in% c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD"), ]
+IL <- Alcohol2 %>% filter(state == "illinois", between(Alcohol2$year, 1977, 2017))
+IL2 <- IL %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+IN <- Alcohol2 %>% filter(state == "indiana", between(Alcohol2$year, 1977, 2017))
+IN2 <- IN %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MI <- Alcohol2 %>% filter(state == "michigan", between(Alcohol2$year, 1977, 2017))
+MI2 <- MI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+OH <- Alcohol2 %>% filter(state == "ohio", between(Alcohol2$year, 1977, 2017))
+OH2 <- OH %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WI <- Alcohol2 %>% filter(state == "wisconsin", between(Alcohol2$year, 1977, 2017))
+WI2 <- WI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+IA <- Alcohol2 %>% filter(state == "idaho", between(Alcohol2$year, 1977, 2017))
+IA2 <- IA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+KS <- Alcohol2 %>% filter(state == "kansas", between(Alcohol2$year, 1977, 2017))
+KS2 <- KS %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MN <- Alcohol2 %>% filter(state == "minnesota", between(Alcohol2$year, 1977, 2017))
+MN2 <- MN %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MO <- Alcohol2 %>% filter(state == "missouri", between(Alcohol2$year, 1977, 2017))
+MO2 <- MO %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NE <- Alcohol2 %>% filter(state == "new hampshire", between(Alcohol2$year, 1977, 2017))
+NE2 <- NE %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+ND <- Alcohol2 %>% filter(state == "north dakota", between(Alcohol2$year, 1977, 2017))
+ND2 <- ND %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+SD <- Alcohol2 %>% filter(state == "north dakota", between(Alcohol2$year, 1977, 2017))
+SD2 <- SD %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r}
+#Region3 <- Alien[Alien$State %in% c("DE","FL","GA","MD","NC","SC","VA","WV","AL","KY","MS","TN","AR","LA","OK","TX"),]
+DE <- Alcohol2 %>% filter(state == "delaware", between(Alcohol2$year, 1977, 2017))
+DE2 <- DE %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+FL <- Alcohol2 %>% filter(state == "florida", between(Alcohol2$year, 1977, 2017))
+FL2 <- FL %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+GA <- Alcohol2 %>% filter(state == "georgia", between(Alcohol2$year, 1977, 2017))
+GA2 <- GA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MD <- Alcohol2 %>% filter(state == "maryland", between(Alcohol2$year, 1977, 2017))
+MD2 <- MD %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NC <- Alcohol2 %>% filter(state == "north carolina", between(Alcohol2$year, 1977, 2017))
+NC2 <- NC %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+SC <- Alcohol2 %>% filter(state == "south carolina", between(Alcohol2$year, 1977, 2017))
+SC2 <- SC %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+VA <- Alcohol2 %>% filter(state == "virginia", between(Alcohol2$year, 1977, 2017))
+VA2 <- VA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WV <- Alcohol2 %>% filter(state == "west virginia", between(Alcohol2$year, 1977, 2017))
+WV2 <- WV %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+AL <- Alcohol2 %>% filter(state == "alabama", between(Alcohol2$year, 1977, 2017))
+AL2 <- AL %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+KY <- Alcohol2 %>% filter(state == "kentucky", between(Alcohol2$year, 1977, 2017))
+KY2 <- KY %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MS <- Alcohol2 %>% filter(state == "mississippi", between(Alcohol2$year, 1977, 2017))
+MS2 <- MS %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+TN <- Alcohol2 %>% filter(state == "tennessee", between(Alcohol2$year, 1977, 2017))
+TN2 <- TN %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+AR <- Alcohol2 %>% filter(state == "arkansas", between(Alcohol2$year, 1977, 2017))
+AR2 <- AR %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+LA <- Alcohol2 %>% filter(state == "louisiana", between(Alcohol2$year, 1977, 2017))
+LA2 <- LA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+OK <- Alcohol2 %>% filter(state == "oklahoma", between(Alcohol2$year, 1977, 2017))
+OK2 <- OK %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+TX <- Alcohol2 %>% filter(state == "texas", between(Alcohol2$year, 1977, 2017))
+TX2 <- TX %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+```
+
+```{r}
+#Region4 <- Alien[Alien$State %in% c("AZ","CO","ID","MO","NV","NM","UT","WY","AK","CA","HI","OR","WA"),]
+AZ <- Alcohol2 %>% filter(state == "arizona", between(Alcohol2$year, 1977, 2017))
+AZ2 <- AZ %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+CO <- Alcohol2 %>% filter(state == "colorado", between(Alcohol2$year, 1977, 2017))
+CO2 <- CO %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+ID <- Alcohol2 %>% filter(state == "idaho", between(Alcohol2$year, 1977, 2017))
+ID2 <- ID %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+MO <- Alcohol2 %>% filter(state == "missouri", between(Alcohol2$year, 1977, 2017))
+MO2 <- MO %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NV <- Alcohol2 %>% filter(state == "nevada", between(Alcohol2$year, 1977, 2017))
+NV2 <- NV %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+NM <- Alcohol2 %>% filter(state == "new mexico", between(Alcohol2$year, 1977, 2017))
+NM2 <- NM %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+UT <- Alcohol2 %>% filter(state == "utah", between(Alcohol2$year, 1977, 2017))
+UT2 <- UT %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WY <- Alcohol2 %>% filter(state == "wyoming", between(Alcohol2$year, 1977, 2017))
+WY2 <- WY %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+AK <- Alcohol2 %>% filter(state == "alaska", between(Alcohol2$year, 1977, 2017))
+AK2 <- AK %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+CA <- Alcohol2 %>% filter(state == "california", between(Alcohol2$year, 1977, 2017))
+CA2 <- CA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+HI <- Alcohol2 %>% filter(state == "hawaii", between(Alcohol2$year, 1977, 2017))
+HI2 <- HI %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+OR <- Alcohol2 %>% filter(state == "oregon", between(Alcohol2$year, 1977, 2017))
+OR2 <- OR %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+WA <- Alcohol2 %>% filter(state == "washington", between(Alcohol2$year, 1977, 2017))
+WA2 <- WA %>% select(year, number_of_beers, number_of_glasses_wine, number_of_shots_liquor, number_of_drinks_total)
+
+```
+
+```{r}
+R1DF <- data.frame("State"= c("CT","ME","MA", "NH", "RI", "VT", "NJ", "NY", "PA"), "Average Number of Beers" = c(mean(CT2$number_of_beers),mean(ME2$number_of_beers),mean(MA2$number_of_beers),mean(NH2$number_of_beers),mean(RI2$number_of_beers),mean(VT2$number_of_beers),mean(NJ2$number_of_beers),mean(NY2$number_of_beers),mean(PA2$number_of_beers)), "Average Glasses of Wine" = c(mean(CT2$number_of_glasses_wine),mean(ME2$number_of_glasses_wine),mean(MA2$number_of_glasses_wine),mean(NH2$number_of_glasses_wine),mean(RI2$number_of_glasses_wine),mean(VT2$number_of_glasses_wine),mean(NJ2$number_of_glasses_wine),mean(NY2$number_of_glasses_wine),mean(PA2$number_of_glasses_wine)), "Average number of shots of liqour" = c(mean(CT2$number_of_shots_liquor),mean(ME2$number_of_shots_liquor),mean(MA2$number_of_shots_liquor),mean(NH2$number_of_shots_liquor),mean(RI2$number_of_shots_liquor),mean(VT2$number_of_shots_liquor),mean(NJ2$number_of_shots_liquor),mean(NY2$number_of_shots_liquor),mean(PA2$number_of_shots_liquor)), "Average Drinks Total" = c(mean(CT2$number_of_drinks_total),mean(ME2$number_of_drinks_total),mean(MA2$number_of_drinks_total),mean(NH2$number_of_drinks_total),mean(RI2$number_of_drinks_total),mean(VT2$number_of_drinks_total),mean(NJ2$number_of_drinks_total),mean(NY2$number_of_drinks_total),mean(PA2$number_of_drinks_total)), "Sightings" = strtoi(c("1251","830","1836","786","421","428","1979","4153","3429"), base = 0L))
+
+R2DF <- data.frame("State"= c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD"), "Average Number of Beers" = c(mean(IL2$number_of_beers),mean(IN2$number_of_beers),mean(MI2$number_of_beers),mean(OH2$number_of_beers),mean(WI2$number_of_beers),mean(IA2$number_of_beers),mean(KS2$number_of_beers),mean(MN2$number_of_beers),mean(MO2$number_of_beers),mean(NE2$number_of_beers),mean(ND2$number_of_beers),mean(SD2$number_of_beers)), "Average Glasses of Wine" = c(mean(IL2$number_of_glasses_wine),mean(IN2$number_of_glasses_wine),mean(MI2$number_of_glasses_wine),mean(OH2$number_of_glasses_wine),mean(WI2$number_of_glasses_wine),mean(IA2$number_of_glasses_wine),mean(KS2$number_of_glasses_wine),mean(MN2$number_of_glasses_wine),mean(MO2$number_of_glasses_wine),mean(NE2$number_of_glasses_wine),mean(ND2$number_of_glasses_wine),mean(SD2$number_of_glasses_wine)),"Average number of shots of liqour" = c(mean(IL2$number_of_shots_liquor),mean(IN2$number_of_shots_liquor),mean(MI2$number_of_shots_liquor),mean(OH2$number_of_shots_liquor),mean(WI2$number_of_shots_liquor),mean(IA2$number_of_shots_liquor),mean(KS2$number_of_shots_liquor),mean(MN2$number_of_shots_liquor),mean(MO2$number_of_shots_liquor),mean(NE2$number_of_shots_liquor),mean(ND2$number_of_shots_liquor),mean(SD2$number_of_shots_liquor)),"Average Drinks Total" = c(mean(IL2$number_of_drinks_total),mean(IN2$number_of_drinks_total),mean(MI2$number_of_drinks_total),mean(OH2$number_of_drinks_total),mean(WI2$number_of_drinks_total),mean(IA2$number_of_drinks_total),mean(KS2$number_of_drinks_total),mean(MN2$number_of_drinks_total),mean(MO2$number_of_drinks_total),mean(NE2$number_of_drinks_total),mean(ND2$number_of_drinks_total),mean(SD2$number_of_drinks_total)), "Sightings" = strtoi(c("3273","1747","2682","3119","1787","892","840","1462","2033","498","175","271"), base = 0L))
+
+R3DF <-  data.frame("State"= c("DE","FL","GA","MD","NC","SC","VA","WV","AL","KY","MS","TN","AR","LA","OK","TX"), "Average Number of Beers" = c(mean(DE2$number_of_beers),mean(FL2$number_of_beers),mean(GA2$number_of_beers),mean(MD2$number_of_beers),mean(NC2$number_of_beers),mean(SC2$number_of_beers),mean(VA2$number_of_beers),mean(WV2$number_of_beers),mean(AL2$number_of_beers),mean(KY2$number_of_beers),mean(MS2$number_of_beers),mean(TN2$number_of_beers),mean(AR2$number_of_beers),mean(LA2$number_of_beers),mean(OK2$number_of_beers),mean(TX2$number_of_beers)), "Average Glasses of Wine" = c(mean(DE2$number_of_glasses_wine),mean(FL2$number_of_glasses_wine),mean(GA2$number_of_glasses_wine),mean(MD2$number_of_glasses_wine),mean(NC2$number_of_glasses_wine),mean(SC2$number_of_glasses_wine),mean(VA2$number_of_glasses_wine),mean(WV2$number_of_glasses_wine),mean(AL2$number_of_glasses_wine),mean(KY2$number_of_glasses_wine),mean(MS2$number_of_glasses_wine),mean(TN2$number_of_glasses_wine),mean(AR2$number_of_glasses_wine),mean(LA2$number_of_glasses_wine),mean(OK2$number_of_glasses_wine),mean(TX2$number_of_glasses_wine)),"Average number of shots of liqour" = c(mean(DE2$number_of_shots_liquor),mean(FL2$number_of_shots_liquor),mean(GA2$number_of_shots_liquor),mean(MD2$number_of_shots_liquor),mean(NC2$number_of_shots_liquor),mean(SC2$number_of_shots_liquor),mean(VA2$number_of_shots_liquor),mean(WV2$number_of_shots_liquor),mean(AL2$number_of_shots_liquor),mean(KY2$number_of_shots_liquor),mean(MS2$number_of_shots_liquor),mean(TN2$number_of_shots_liquor),mean(AR2$number_of_shots_liquor),mean(LA2$number_of_shots_liquor),mean(OK2$number_of_shots_liquor),mean(TX2$number_of_shots_liquor)), "Average Drinks Total" = c(mean(DE2$number_of_drinks_total),mean(FL2$number_of_drinks_total),mean(GA2$number_of_drinks_total),mean(MD2$number_of_drinks_total),mean(NC2$number_of_drinks_total),mean(SC2$number_of_drinks_total),mean(VA2$number_of_drinks_total),mean(WV2$number_of_drinks_total),mean(AL2$number_of_drinks_total),mean(KY2$number_of_drinks_total),mean(MS2$number_of_drinks_total),mean(TN2$number_of_drinks_total),mean(AR2$number_of_drinks_total),mean(LA2$number_of_drinks_total),mean(OK2$number_of_drinks_total),mean(TX2$number_of_drinks_total)), "Sightings" = strtoi(c("277","5771","1867","1281","2623","1582","1880","642","937","1145","546","1628","819","826","1000","4485"), base = 0L))
+
+R4DF <- data.frame("State"= c("AZ","CO","ID","MO","NV","NM","UT","WY","AK","CA","HI","OR","WA"), "Average Number of Beers" = c(mean(AZ2$number_of_beers),mean(CO2$number_of_beers),mean(ID2$number_of_beers),mean(MO2$number_of_beers),mean(NV2$number_of_beers),mean(NM2$number_of_beers),mean(UT2$number_of_beers),mean(WY2$number_of_beers),mean(AK2$number_of_beers),mean(CA2$number_of_beers),mean(HI2$number_of_beers),mean(OR2$number_of_beers),mean(WA2$number_of_beers)),"Average Glasses of Wine" = c(mean(AZ2$number_of_glasses_wine),mean(CO2$number_of_glasses_wine),mean(ID2$number_of_glasses_wine),mean(MO2$number_of_glasses_wine),mean(NV2$number_of_glasses_wine),mean(NM2$number_of_glasses_wine),mean(UT2$number_of_glasses_wine),mean(WY2$number_of_glasses_wine),mean(AK2$number_of_glasses_wine),mean(CA2$number_of_glasses_wine),mean(HI2$number_of_glasses_wine),mean(OR2$number_of_glasses_wine),mean(WA2$number_of_glasses_wine)), "Average number of shots of liqour" = c(mean(AZ2$number_of_shots_liquor),mean(CO2$number_of_shots_liquor),mean(ID2$number_of_shots_liquor),mean(MO2$number_of_shots_liquor),mean(NV2$number_of_shots_liquor),mean(NM2$number_of_shots_liquor),mean(UT2$number_of_shots_liquor),mean(WY2$number_of_shots_liquor),mean(AK2$number_of_shots_liquor),mean(CA2$number_of_shots_liquor),mean(HI2$number_of_shots_liquor),mean(OR2$number_of_shots_liquor),mean(WA2$number_of_shots_liquor)),"Average Drinks Total" = c(mean(AZ2$number_of_drinks_total),mean(CO2$number_of_drinks_total),mean(ID2$number_of_drinks_total),mean(MO2$number_of_drinks_total),mean(NV2$number_of_drinks_total),mean(NM2$number_of_drinks_total),mean(UT2$number_of_drinks_total),mean(WY2$number_of_drinks_total),mean(AK2$number_of_drinks_total),mean(CA2$number_of_drinks_total),mean(HI2$number_of_drinks_total),mean(OR2$number_of_drinks_total),mean(WA2$number_of_drinks_total)), "Sightings" = strtoi(c("3693","2161","845","2033","1231","1134","1002","275","486","12200","481","2547","5351"), base = 0L))
+
+```
+
+```{r}
+glimpse(R2DF)
+```
+
+
+
+
+```{r}
+R1DF2 <- R1DF %>% mutate_at(c(2:6), funs(scale(.,center=FALSE))) 
+
+R1DF3 <- R1DF %>% mutate_at(c(2:6), funs(scale(.))) #standard deviation (scale() defaults to SD?)
+
+R2DF2 <- R2DF  %>% mutate_at(c(2:6), funs(scale(.)))
+
+R3DF2 <- R3DF  %>% mutate_at(c(2:6), funs(scale(.)))
+
+R4DF2 <- R4DF  %>% mutate_at(c(2:6), funs(scale(.)))
+
+```
+
+```{r}
+#ALLRegions <- data.frame("Region" = c("Northeast","Midwest", "South", "West"), "Average Number of Beers" = c(mean(R1DF$Average.Number.of.Beers), mean(R2DF$Average.Number.of.Beers), mean(R3DF$Average.Number.of.Beers), mean(R4DF$Average.Number.of.Beers)), "Average Glasses of Wine" = c(mean(R1DF$Average.Glasses.of.Wine), mean(R2DF$Average.Glasses.of.Wine), mean(R3DF$Average.Glasses.of.Wine), mean(R4DF$Average.Glasses.of.Wine)), "Average Number of Shots of Liqour" = c(mean(R1DF$Average.number.of.shots.of.liqour), mean(R2DF$Average.number.of.shots.of.liqour), mean(R3DF$Average.number.of.shots.of.liqour), mean(R4DF$Average.number.of.shots.of.liqour)), "Average Drinks Total" = c(mean(R1DF$Average.Drinks.Total), mean(R2DF$Average.Drinks.Total), mean(R3DF$Average.Drinks.Total), mean(R4DF$Average.Drinks.Total)), "Sightings" = c(mean(R1DF$Sightings), mean(R2DF$Sightings), mean(R3DF$Sightings), mean(R4DF$Sightings)))
+
+ALLRegions <- data.frame("Region" = c("Northeast","Midwest", "South", "West"), "Average Drinks Total" = c(mean(R1DF$Average.Drinks.Total), mean(R2DF$Average.Drinks.Total), mean(R3DF$Average.Drinks.Total), mean(R4DF$Average.Drinks.Total)), "Sightings" = c(mean(R1DF$Sightings), mean(R2DF$Sightings), mean(R3DF$Sightings), mean(R4DF$Sightings)))
+
+ALLRegions2 <- ALLRegions %>% mutate_at(c(2:3), funs(scale(.)))
+
+```
+
+
+```{r}
+df2 <- melt(R1DF, id.vars = "State" , variable.name =  'series')
+df3 <- melt(R1DF2, id.vars = "State" , variable.name =  'series')
+df4 <- melt(R1DF3, id.vars = "State" , variable.name =  'series')
+
+df5 <- melt(R2DF2, id.vars = "State" , variable.name =  'series')
+
+df6 <- melt(R3DF2, id.vars = "State" , variable.name =  'series')
+
+df7 <- melt(R4DF2, id.vars = "State" , variable.name =  'series')
+
+dfALL <- melt(ALLRegions2, id.vars = "Region" , variable.name =  'series')
+```
+
+
+```{r}
+ggplot(data = df3, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = df4, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge") +
+  scale_fill_manual(labels(c("Average Number of Beers", "Average Glasses of Wine", "Average Number of Shots of Liqour", "Average Drinks Total", "Sightings")))
+```
+
+```{r}
+ggplot(data = df5, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = df6, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = df7, aes(State, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+
+```{r}
+ggplot(data = dfALL, aes(Region, value)) +
+  geom_col(aes(color=series), position="dodge")
+```
+```{r, Readusted! Creating Region based datasets average number of beers, glasses of wine, shots of liqour, drinks total and sightings }
+R1DF <- data.frame("State"= c("CT","ME","MA", "NH", "RI", "VT", "NJ", "NY", "PA"), "Average Drinks Total" = c(mean(CT2$number_of_drinks_total),mean(ME2$number_of_drinks_total),mean(MA2$number_of_drinks_total),mean(NH2$number_of_drinks_total),mean(RI2$number_of_drinks_total),mean(VT2$number_of_drinks_total),mean(NJ2$number_of_drinks_total),mean(NY2$number_of_drinks_total),mean(PA2$number_of_drinks_total)), "Sightings" = strtoi(c("1251","830","1836","786","421","428","1979","4153","3429"), base = 0L))
+
+R2DF <- data.frame("State"= c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD"), "Average Drinks Total" = c(mean(IL2$number_of_drinks_total),mean(IN2$number_of_drinks_total),mean(MI2$number_of_drinks_total),mean(OH2$number_of_drinks_total),mean(WI2$number_of_drinks_total),mean(IA2$number_of_drinks_total),mean(KS2$number_of_drinks_total),mean(MN2$number_of_drinks_total),mean(MO2$number_of_drinks_total),mean(NE2$number_of_drinks_total),mean(ND2$number_of_drinks_total),mean(SD2$number_of_drinks_total)), "Sightings" = strtoi(c("3273","1747","2682","3119","1787","892","840","1462","2033","498","175","271"), base = 0L))
+
+R3DF <-  data.frame("State"= c("DE","FL","GA","MD","NC","SC","VA","WV","AL","KY","MS","TN","AR","LA","OK","TX"),  "Average Drinks Total" = c(mean(DE2$number_of_drinks_total),mean(FL2$number_of_drinks_total),mean(GA2$number_of_drinks_total),mean(MD2$number_of_drinks_total),mean(NC2$number_of_drinks_total),mean(SC2$number_of_drinks_total),mean(VA2$number_of_drinks_total),mean(WV2$number_of_drinks_total),mean(AL2$number_of_drinks_total),mean(KY2$number_of_drinks_total),mean(MS2$number_of_drinks_total),mean(TN2$number_of_drinks_total),mean(AR2$number_of_drinks_total),mean(LA2$number_of_drinks_total),mean(OK2$number_of_drinks_total),mean(TX2$number_of_drinks_total)), "Sightings" = strtoi(c("277","5771","1867","1281","2623","1582","1880","642","937","1145","546","1628","819","826","1000","4485"), base = 0L))
+
+R4DF <- data.frame("State"= c("AZ","CO","ID","MO","NV","NM","UT","WY","AK","CA","HI","OR","WA"), "Average Drinks Total" = c(mean(AZ2$number_of_drinks_total),mean(CO2$number_of_drinks_total),mean(ID2$number_of_drinks_total),mean(MO2$number_of_drinks_total),mean(NV2$number_of_drinks_total),mean(NM2$number_of_drinks_total),mean(UT2$number_of_drinks_total),mean(WY2$number_of_drinks_total),mean(AK2$number_of_drinks_total),mean(CA2$number_of_drinks_total),mean(HI2$number_of_drinks_total),mean(OR2$number_of_drinks_total),mean(WA2$number_of_drinks_total)), "Sightings" = strtoi(c("3693","2161","845","2033","1231","1134","1002","275","486","12200","481","2547","5351"), base = 0L))
+
+ALLRegions <- data.frame("Region" = c("Northeast","Midwest", "South", "West"), "Average Drinks Total" = c(mean(R1DF$Average.Drinks.Total), mean(R2DF$Average.Drinks.Total), mean(R3DF$Average.Drinks.Total), mean(R4DF$Average.Drinks.Total)), "Sightings" = c(mean(R1DF$Sightings), mean(R2DF$Sightings), mean(R3DF$Sightings), mean(R4DF$Sightings)))

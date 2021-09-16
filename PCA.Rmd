@@ -1,0 +1,92 @@
+---
+title: "PCA"
+author: "Nicholas Paisley"
+date: "5/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(factoextra)
+library(tidyr)
+```
+
+```{r}
+soccer <- read.csv("data.csv", header = TRUE)
+```
+
+```{r}
+stats = soccer[c(55:88)] #grabbing the stats I want to do a PCR on.
+smallset <- soccer[,c("Crossing","Stamina","Strength","Penalties","Agility")]
+```
+
+```{r}
+test <- stats %>% mutate_if(is.numeric, ~replace_na(.x, 0)) %>% select(is.numeric) %>% princomp(., center = TRUE, scale = TRUE) #changing all the NAs (if any) to 0's
+print(stats) #printing the PCR
+```
+
+```{r}
+test 
+```
+
+```{r}
+summary(test) #checking the importance of the numerical components
+```
+```{r}
+test$loadings #These are the weights that transform the predictors into the components(Comp 1 is first principal component and Comp 2 is second principal component and so on.)
+```
+```{r}
+screeplot(test) #Screeplot from R
+```
+
+```{r}
+fviz_eig(test) #Creating a couple of elbow curves to show the variances of each component. Once the elbow curve becomes flat, that is the stopping point of the components
+#Tells us that we should use the Comp1 and Comp2.
+
+#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/
+```
+
+```{r}
+biplot(test) 
+#A biplot simultaneously plots information on the observations and the variables in a multidimensional dataset.
+
+#A biplot can optimally represent any two of the following characteristics:
+#1. Distances between observations
+#2. Relationships between variables
+#3. Inner products between observations and variables
+
+#https://analyse-it.com/docs/user-guide/multivariate/biplot
+```
+
+```{r}
+fviz_pca_biplot(test, repel = TRUE,
+                col.var = "aquamarine3", # Variables color
+                col.ind = "darkgrey"  # Individuals color
+                )
+#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/
+```
+
+
+###The loadings for the top 5 principal components (Weights) of the 34 variables for soccer###
+
+```{r}
+loadings <- data.frame(test$loadings[,1:5]) #Creating a loadings data frame with the first 5 principal components 
+```
+
+```{r}
+loadings$dim <- row.names(loadings) #adding a new row named dim to our loadings dataframe
+```
+
+```{r}
+loadings <- gather(loadings, 'Component', 'Weight', -dim)
+#gather() #Gather takes multiple columns and collapses into key-value pairs, duplicating all other columns as needed. You use gather() when you notice that you have columns that are not variables.
+```
+
+```{r}
+ggplot(loadings, aes(x=dim, y=Weight)) + 
+geom_bar(stat='identity') + 
+facet_grid(Component ~ , scales='free_y') + 
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+

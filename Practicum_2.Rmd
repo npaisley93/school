@@ -1,0 +1,947 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(tm)
+library(caret)
+library(crayon)
+library(reshape2)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+Plane <- read.csv("Airplane_Crashes_and_Fatalities_Since_1908.csv", header=TRUE)
+```
+
+```{r}
+glimpse(Plane)
+```
+
+```{r}
+Plane$Registration <- NULL
+Plane$Flight..<- NULL
+Plane$cn.In <- NULL
+glimpse(Plane)
+```
+
+```{r}
+unique(Plane$Time , incomparables = FALSE)
+```
+
+```{r}
+Plane[grep("^c", Plane$Time),]
+```
+```{r}
+Plane$Time[Plane$Time == "c: 1:00"] <- "1:00"
+Plane$Time[Plane$Time == "c:17:00"] <- "17:00"
+Plane$Time[Plane$Time == "c: 2:00"] <- "2:00"
+Plane$Time[Plane$Time == "c:09:00"] <- "9:00"
+Plane$Time[Plane$Time == "c16:50"] <- "16:50"
+Plane$Time[Plane$Time == "c14:30"] <- "14:30"
+Plane$Time[Plane$Time == "c: 9:40"] <- "9:40"
+Plane$Time[Plane$Time == "18.4"] <- "18:40"
+Plane$Time[Plane$Time == "943"] <- "9:43"
+Plane$Time[Plane$Time == "114:20:00"] <- "14:20"
+```
+
+```{r}
+Plane[grep("^C", Plane$Time),]
+```
+
+```{r}
+unique(Plane$Time , incomparables = FALSE)
+```
+
+```{r}
+#Survivors
+Plane$Survivors <- Plane$Aboard - Plane$Fatalities
+#Convert Date field data type form factor to date
+Plane$Date <- as.Date(Plane$Date, format = "%m/%d/%Y")
+#Separate Year
+Plane$Year <- (year(Plane$Date))
+Plane$Year <- as.integer(Plane$Year)
+#Plane$Month <- (month(ymd(Plane$Date))
+```
+
+```{r}
+glimpse(Plane)
+```
+
+
+```{r}
+ggplot(Plane, aes(x=Year)) + geom_bar(fill = "blue") + xlab("Year") + ylab("Airplane Crashes") + ggtitle("Airplane Crashes Per Year") + theme_classic()
+```
+```{r}
+PN <- rbind(Survivors = aggregate(Plane$Survivors, by = list(Plane$Year), FUN = sum),
+            Aboard = aggregate(Plane$Aboard, by = list(Plane$Year), FUN = sum),
+            Fatalities = aggregate(Plane$Fatalities, by = list(Plane$Year), FUN = sum))
+
+PN$Travelers <- rownames(PN)
+PN$Travelers <- gsub("[.].*","", PN$Travelers)
+PN <- rename(PN, Year = Group.1, Count = x)
+
+PN <- (PN[!PN$Count == "",])
+
+ggplot(PN, aes(x=Year, y=Count , group=Travelers)) + geom_line(aes(color=Travelers)) +
+theme_classic()
+```
+```{r} 
+#Text Mining 
+Plane$Fatalities[is.na(Plane$Fatalities)] = 0 #Removing the NA's from the Fatalities  
+corpus = VCorpus(VectorSource(Plane$Summary)) 
+corpus = tm_map(corpus, tolower) #Applying mapping to the corpora and changing the all the letter to lowercase
+corpus = tm_map(corpus, PlainTextDocument) #makes sure to remove any words in bold, italics, underlines and etc. to make the document the same throughtout
+corpus = tm_map(corpus, removePunctuation) #Applying mapping to the corpora and removing all the punctuation 
+corpus = tm_map(corpus, removeWords, stopwords("english")) #Removing all common words that are not needed within the summaries.
+dtm = DocumentTermMatrix(corpus) #creating a matrix that describes the frequency of terms that are from the summary collection.
+dtm = removeSparseTerms(dtm, 0.925) # removing all terms in the corpus whose sparsity is greater the 92.5%
+```
+
+```{r}
+freq_terms = findFreqTerms(dtm,100) #Finding frequent terms that show up at least 100 times or more.
+print('Most frequent terms:') #Printing text
+
+#Printing the frequent terms that appear more than or at least 100 times.
+for( i in freq_terms) 
+    cat(i, " ") 
+```
+
+```{r}
+nRows = apply(dtm , 1, sum) #Applying the sum function to the columns, showing how many times the frequent words show up in the summary variable row.
+dtm = dtm[nRows > 0, ] #Removing all the rows that have 0.  
+```
+
+```{r}
+dtm2 = weightTfIdf(dtm) #normalize the data for word frequency ***** , the higher the number the less frequent it occurred 
+```
+
+```{r}
+m = as.matrix(dtm2) #Creating a matrix from the dtm2 DocumentTermMatrix
+rownames(m) = 1:nrow(m) #Fixing the rownames
+```
+
+```{r, preparing the data for kmeans}
+preproc = preProcess(m) 
+m_norm = predict(preproc, m)
+
+set.seed(41) #creating a seed to keep the kmeans the same
+cl = kmeans(m_norm, centers = 6)
+```
+
+```{r, Creating the kmeans}
+set.seed(41) #creating a seed to keep the kmeans the same  
+#4,#6 (9 clusters) #13 (12 clusters), 22 
+
+#Saving a Kmeans cluster      
+
+Kclusters <- c(kmeans(m_norm, centers = 2)$tot.withinss,
+kmeans(m_norm, centers = 3)$tot.withinss,
+kmeans(m_norm, centers = 4)$tot.withinss,
+kmeans(m_norm, centers = 5)$tot.withinss,
+kmeans(m_norm, centers = 6)$tot.withinss,
+kmeans(m_norm, centers = 7)$tot.withinss,
+kmeans(m_norm, centers = 8)$tot.withinss,
+kmeans(m_norm, centers = 9)$tot.withinss,
+kmeans(m_norm, centers = 10)$tot.withinss,
+kmeans(m_norm, centers = 11)$tot.withinss,
+kmeans(m_norm, centers = 12)$tot.withinss)
+```
+
+```{r}
+plot(Kclusters)
+```
+```{r}
+print('Clusters:') 
+table(cl$cluster)
+```
+
+```{r}
+plot(prcomp(m_norm)$x, col=cl$cl) #plotting the clusters onto a principal component graph.
+```
+
+```{r}
+freq_terms_1 = findFreqTerms(dtm[cl$cluster==1,], 50)
+freq_terms_2 = findFreqTerms(dtm[cl$cluster==2,], 50)
+freq_terms_3 = findFreqTerms(dtm[cl$cluster==3,], 50)
+freq_terms_4 = findFreqTerms(dtm[cl$cluster==4,], 50)
+freq_terms_5 = findFreqTerms(dtm[cl$cluster==5,], 50)
+freq_terms_6 = findFreqTerms(dtm[cl$cluster==6,], 50)
+freq_terms_7 = findFreqTerms(dtm[cl$cluster==7,], 50) 
+freq_terms_8 = findFreqTerms(dtm[cl$cluster==8,], 50) 
+freq_terms_9 = findFreqTerms(dtm[cl$cluster==9,], 50) 
+freq_terms_10 = findFreqTerms(dtm[cl$cluster==10,], 50) 
+
+cat("50 most frequnt terms in cluster 1:\n")
+for( i in freq_terms_1)
+    cat(blue(i, " "))
+cat('\n50 most frequnt terms in cluster 2:\n')
+for( i in freq_terms_2)
+    cat(blue(i, " "))
+cat('\n50 most frequnt terms in cluster 3:\n')
+for( i in freq_terms_3)
+    cat(blue(i, " "))
+cat('\n50 most frequnt terms in cluster 4:\n')
+for( i in freq_terms_4)
+    cat(blue(i, " "))
+cat('\n50 most frequnt terms in cluster 5:\n')
+for( i in freq_terms_5)
+    cat(blue(i, " "))
+cat('\n50 most frequnt terms in cluster 6:\n')
+for( i in freq_terms_6)
+    cat(blue(i, " "))
+#cat('\n50 most frequnt terms in cluster 7:\n')
+for( i in freq_terms_7)
+    cat(blue(i, " "))
+#cat('\n50 most frequnt terms in cluster 8:\n')
+for( i in freq_terms_8)
+    cat(blue(i, " "))
+#cat('\n50 most frequnt terms in cluster 9:\n')
+for( i in freq_terms_9)
+    cat(blue(i, " "))
+#cat('\n50 most frequnt terms in cluster 10:\n')
+for( i in freq_terms_10)
+    cat(blue(i, " "))
+
+# cat("\n\nFatalities in cluster 1:")
+# sum(Plane$Fatalities[which(cl$cluster==1)])
+# sum(Plane$Survivors[which(cl$cluster==1)])
+# print('Fatalities in cluster 2:')
+# sum(Plane$Fatalities[which(cl$cluster==2)])
+# sum(Plane$Survivors[which(cl$cluster==2)])
+# print('Fatalities in cluster 3:')
+# sum(Plane$Fatalities[which(cl$cluster==3)])
+# sum(Plane$Survivors[which(cl$cluster==3)])
+# print('Fatalities in cluster 4:')
+# sum(Plane$Fatalities[which(cl$cluster==4)])
+# sum(Plane$Survivors[which(cl$cluster==4)])
+# print('Fatalities in cluster 5:')
+# sum(Plane$Fatalities[which(cl$cluster==5)])
+# sum(Plane$Survivors[which(cl$cluster==5)])
+# print('Fatalities in cluster 6:')
+# sum(Plane$Fatalities[which(cl$cluster==6)])
+# sum(Plane$Survivors[which(cl$cluster==6)])
+# print('Fatalities in cluster 7:')
+# sum(Plane$Fatalities[which(cl$cluster==7)])
+# sum(Plane$Survivors[which(cl$cluster==7)])
+# print('Fatalities in cluster 8:')
+# sum(Plane$Fatalities[which(cl$cluster==8)])
+# sum(Plane$Survivors[which(cl$cluster==8)])
+# print('Fatalities in cluster 9:')
+# sum(Plane$Fatalities[which(cl$cluster==9)])
+# sum(Plane$Survivors[which(cl$cluster==9)])
+# print('Fatalities in cluster 10:')
+# sum(Plane$Fatalities[which(cl$cluster==10)])
+# sum(Plane$Survivors[which(cl$cluster==10)])
+```
+
+```{r}
+C1Analysis <- Plane[str_detect(Plane$Summary, "[Cc]ontrol"),] #Grabbing all rows that contain [Cc]ontrol and putting them into a dataframe
+
+C1AnalysisB <- filter(C1Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C1AnalysisA <- filter(C1Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C1AnalysisB <- na.omit(C1AnalysisB) #Deleting all the NAs from the dataframe
+C1AnalysisA <- na.omit(C1AnalysisA) #Deleting all the NAs from the dataframe
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C1AnalysisControl <- rbind(Survivors = aggregate(C1Analysis$Survivors, by = list(C1Analysis$Date), FUN = sum),
+            Aboard = aggregate(C1Analysis$Aboard, by = list(C1Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C1Analysis$Fatalities, by = list(C1Analysis$Date), FUN = sum))
+
+C1AnalysisControl$Travelers <- rownames(C1AnalysisControl) #Creating new row named "Travelers"
+C1AnalysisControl$Travelers <- gsub("[.].*","", C1AnalysisControl$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C1AnalysisControl <- rename(C1AnalysisControl, Date = Group.1, Count = x) #Renaming columns
+C1AnalysisControl <- (C1AnalysisControl[!C1AnalysisControl$Count == "",]) #Removing the empty columns in the data-frame.
+
+C1.rect <- data.frame (xmin=min(C1AnalysisControl$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C1AnalysisControl$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C1AnalysisControl, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 1: Control") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15))+ #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) +  #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF <- mean(C1AnalysisB$Fatalities)/mean(C1AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS <- mean(C1AnalysisB$Survivors)/mean(C1AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF <- mean(C1AnalysisA$Fatalities)/mean(C1AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS <- mean(C1AnalysisA$Survivors)/mean(C1AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C1AnalysisAB_F <- c(BF,AF) 
+C1AnalysisAB_S <- c(BS,AS)
+
+C1AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C1AnalysisAB_FAS <- data.frame(C1AnalysisAB_D, C1AnalysisAB_F,C1AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C1AnalysisAB_FAS <- rename(C1AnalysisAB_FAS, Fatalities = C1AnalysisAB_F, Survivors = C1AnalysisAB_S, Date = C1AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C1AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C1AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 1: Control Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") + #adding caption to graph
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+
+
+
+```
+
+```{r, Taking}
+C2Analysis <- Plane[str_detect(Plane$Summary, "[Tt]aking"),] #Grabbing all rows that contain [Tt]aking and putting them into a data-frame
+
+C2AnalysisB <- filter(C2Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C2AnalysisA <- filter(C2Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C2AnalysisB <- na.omit(C2AnalysisB) #Deleting all the NAs from the data-frame
+C2AnalysisA <- na.omit(C2AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C2AnalysisTaking <- rbind(Survivors = aggregate(C2Analysis$Survivors, by = list(C2Analysis$Date), FUN = sum),
+            Aboard = aggregate(C2Analysis$Aboard, by = list(C2Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C2Analysis$Fatalities, by = list(C2Analysis$Date), FUN = sum))
+
+C2AnalysisTaking$Travelers <- rownames(C2AnalysisTaking) #Creating new row named "Travelers"
+C2AnalysisTaking$Travelers <- gsub("[.].*","", C2AnalysisTaking$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C2AnalysisTaking <- rename(C2AnalysisTaking, Date = Group.1, Count = x) #Renaming columns
+C2AnalysisTaking <- (C2AnalysisTaking[!C2AnalysisTaking$Count == "",]) #Removing the empty columns in the data-frame.
+
+C1.rect <- data.frame (xmin=min(C2AnalysisTaking$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C2AnalysisTaking$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C2AnalysisTaking, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 2: Taking") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF2 <- mean(C2AnalysisB$Fatalities)/mean(C2AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS2 <- mean(C2AnalysisB$Survivors)/mean(C2AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF2 <- mean(C2AnalysisA$Fatalities)/mean(C2AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS2 <- mean(C2AnalysisA$Survivors)/mean(C2AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C2AnalysisAB_F <- c(BF2,AF2) 
+C2AnalysisAB_S <- c(BS2,AS2)
+
+C2AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C2AnalysisAB_FAS <- data.frame(C2AnalysisAB_D, C2AnalysisAB_F,C2AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C2AnalysisAB_FAS <- rename(C2AnalysisAB_FAS, Fatalities = C2AnalysisAB_F, Survivors = C2AnalysisAB_S, Date = C2AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C2AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C2AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 2: Taking Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars 
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+
+```{r, altitude}
+C3Analysis <- Plane[str_detect(Plane$Summary, "[Aa]ltitude"),] #Grabbing all rows that contain [Tt]aking and putting them into a data-frame
+
+C3AnalysisB <- filter(C3Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C3AnalysisA <- filter(C3Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C3AnalysisB <- na.omit(C3AnalysisB) #Deleting all the NAs from the data-frame
+C3AnalysisA <- na.omit(C3AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C3AnalysisAltitude <- rbind(Survivors = aggregate(C3Analysis$Survivors, by = list(C3Analysis$Date), FUN = sum),
+            Aboard = aggregate(C3Analysis$Aboard, by = list(C3Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C3Analysis$Fatalities, by = list(C3Analysis$Date), FUN = sum))
+
+C3AnalysisAltitude$Travelers <- rownames(C3AnalysisAltitude) #Creating new row named "Travelers"
+C3AnalysisAltitude$Travelers <- gsub("[.].*","", C3AnalysisAltitude$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C3AnalysisAltitude <- rename(C3AnalysisAltitude, Date = Group.1, Count = x) #Renaming columns
+C3AnalysisAltitude <- (C3AnalysisAltitude[!C3AnalysisAltitude$Count == "",]) #Removing the empty columns in the data-frame.
+
+C1.rect <- data.frame (xmin=min(C3AnalysisAltitude$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C3AnalysisAltitude$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C3AnalysisAltitude, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 3: Altitude") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF3 <- mean(C3AnalysisB$Fatalities)/mean(C3AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS3 <- mean(C3AnalysisB$Survivors)/mean(C3AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF3 <- mean(C3AnalysisA$Fatalities)/mean(C3AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS3 <- mean(C3AnalysisA$Survivors)/mean(C3AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C3AnalysisAB_F <- c(BF3,AF3) 
+C3AnalysisAB_S <- c(BS3,AS3)
+
+C3AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C3AnalysisAB_FAS <- data.frame(C3AnalysisAB_D, C3AnalysisAB_F,C3AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C3AnalysisAB_FAS <- rename(C3AnalysisAB_FAS, Fatalities = C3AnalysisAB_F, Survivors = C3AnalysisAB_S, Date = C3AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C3AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C3AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 3: Altitude Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+
+```{r, Engine}
+C4Analysis <- Plane[str_detect(Plane$Summary, "[Ee]ngine"),] #Grabbing all rows that contain [Tt]aking and putting them into a data-frame
+
+C4AnalysisB <- filter(C4Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C4AnalysisA <- filter(C4Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C4AnalysisB <- na.omit(C4AnalysisB) #Deleting all the NAs from the data-frame
+C4AnalysisA <- na.omit(C4AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C4AnalysisEngine <- rbind(Survivors = aggregate(C4Analysis$Survivors, by = list(C4Analysis$Date), FUN = sum),
+            Aboard = aggregate(C4Analysis$Aboard, by = list(C4Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C4Analysis$Fatalities, by = list(C4Analysis$Date), FUN = sum))
+
+C4AnalysisEngine$Travelers <- rownames(C4AnalysisEngine) #Creating new row named "Travelers"
+C4AnalysisEngine$Travelers <- gsub("[.].*","", C4AnalysisEngine$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C4AnalysisEngine <- rename(C4AnalysisEngine, Date = Group.1, Count = x) #Renaming columns
+C4AnalysisEngine <- (C4AnalysisEngine[!C4AnalysisEngine$Count == " ",]) #Removing the empty columns in the data-frame.
+C4AnalysisEngine <- na.omit(C4AnalysisEngine)
+
+C1.rect <- data.frame (xmin =min(C4AnalysisEngine$Date) , xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C4AnalysisEngine$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C4AnalysisEngine, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 4: Engine") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF4 <- mean(C4AnalysisB$Fatalities)/mean(C4AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS4 <- mean(C4AnalysisB$Survivors)/mean(C4AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF4 <- mean(C4AnalysisA$Fatalities)/mean(C4AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS4 <- mean(C4AnalysisA$Survivors)/mean(C4AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C4AnalysisAB_F <- c(BF4,AF4) 
+C4AnalysisAB_S <- c(BS4,AS4)
+
+C4AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C4AnalysisAB_FAS <- data.frame(C4AnalysisAB_D, C4AnalysisAB_F,C4AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C4AnalysisAB_FAS <- rename(C4AnalysisAB_FAS, Fatalities = C4AnalysisAB_F, Survivors = C4AnalysisAB_S, Date = C4AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C4AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C4AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 4: Engine Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars 
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+
+```{r}
+C5Analysis <- Plane[str_detect(Plane$Summary, "[Cc]onditions"),] #Grabbing all rows that contain [Tt]aking and putting them into a data-frame
+
+C5AnalysisB <- filter(C5Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C5AnalysisA <- filter(C5Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C5AnalysisB <- na.omit(C5AnalysisB) #Deleting all the NAs from the data-frame
+C5AnalysisA <- na.omit(C5AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C5AnalysisConditions <- rbind(Survivors = aggregate(C5Analysis$Survivors, by = list(C5Analysis$Date), FUN = sum),
+            Aboard = aggregate(C5Analysis$Aboard, by = list(C5Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C5Analysis$Fatalities, by = list(C5Analysis$Date), FUN = sum))
+
+C5AnalysisConditions$Travelers <- rownames(C5AnalysisConditions) #Creating new row named "Travelers"
+C5AnalysisConditions$Travelers <- gsub("[.].*","", C5AnalysisConditions$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C5AnalysisConditions <- rename(C5AnalysisConditions, Date = Group.1, Count = x) #Renaming columns
+C5AnalysisConditions <- (C5AnalysisConditions[!C5AnalysisConditions$Count == "",]) #Removing the empty columns in the data-frame.
+
+C1.rect <- data.frame (xmin=min(C5AnalysisConditions$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C5AnalysisConditions$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C5AnalysisConditions, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 5: Conditions") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF5 <- mean(C5AnalysisB$Fatalities)/mean(C5AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS5 <- mean(C5AnalysisB$Survivors)/mean(C5AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF5 <- mean(C5AnalysisA$Fatalities)/mean(C5AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS5 <- mean(C5AnalysisA$Survivors)/mean(C5AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C5AnalysisAB_F <- c(BF5,AF5) 
+C5AnalysisAB_S <- c(BS5,AS5)
+
+C5AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C5AnalysisAB_FAS <- data.frame(C5AnalysisAB_D, C5AnalysisAB_F,C5AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C5AnalysisAB_FAS <- rename(C5AnalysisAB_FAS, Fatalities = C5AnalysisAB_F, Survivors = C5AnalysisAB_S, Date = C5AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C5AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C5AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 5: Conditions Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+
+```{r, Cargo}
+C6Analysis <- Plane[str_detect(Plane$Summary, "[Cc]argo"),] #Grabbing all rows that contain [Tt]aking and putting them into a data-frame
+
+C6AnalysisB <- filter(C6Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C6AnalysisA <- filter(C6Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C6AnalysisB <- na.omit(C6AnalysisB) #Deleting all the NAs from the data-frame
+C6AnalysisA <- na.omit(C6AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C6AnalysisCargo <- rbind(Survivors = aggregate(C6Analysis$Survivors, by = list(C6Analysis$Date), FUN = sum),
+            Aboard = aggregate(C6Analysis$Aboard, by = list(C6Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C6Analysis$Fatalities, by = list(C6Analysis$Date), FUN = sum))
+
+C6AnalysisCargo$Travelers <- rownames(C6AnalysisCargo) #Creating new row named "Travelers"
+C6AnalysisCargo$Travelers <- gsub("[.].*","", C6AnalysisCargo$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C6AnalysisCargo <- rename(C6AnalysisCargo, Date = Group.1, Count = x) #Renaming columns
+C6AnalysisCargo <- (C6AnalysisCargo[!C6AnalysisCargo$Count == "",]) #Removing the empty columns in the data-frame.
+
+C1.rect <- data.frame (xmin=min(C6AnalysisCargo$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C6AnalysisCargo$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C6AnalysisCargo, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 6: Cargo") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF6 <- mean(C6AnalysisB$Fatalities)/mean(C6AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS6 <- mean(C6AnalysisB$Survivors)/mean(C6AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF6 <- mean(C6AnalysisA$Fatalities)/mean(C6AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS6 <- mean(C6AnalysisA$Survivors)/mean(C6AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C6AnalysisAB_F <- c(BF6,AF6) 
+C6AnalysisAB_S <- c(BS6,AS6)
+
+C6AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C6AnalysisAB_FAS <- data.frame(C6AnalysisAB_D, C6AnalysisAB_F,C6AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C6AnalysisAB_FAS <- rename(C6AnalysisAB_FAS, Fatalities = C6AnalysisAB_F, Survivors = C6AnalysisAB_S, Date = C6AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C6AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C6AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 6: Cargo Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+
+```{r, weather}
+C7Analysis <- Plane[str_detect(Plane$Summary, "[Ww]eather"),] #Grabbing all rows that contain [Ww]eather and putting them into a data-frame
+
+C7AnalysisB <- filter(C7Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C7AnalysisA <- filter(C7Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C7AnalysisB <- na.omit(C7AnalysisB) #Deleting all the NAs from the data-frame
+C7AnalysisA <- na.omit(C7AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C7AnalysisWeather <- rbind(Survivors = aggregate(C7Analysis$Survivors, by = list(C7Analysis$Date), FUN = sum),
+            Aboard = aggregate(C7Analysis$Aboard, by = list(C7Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C7Analysis$Fatalities, by = list(C7Analysis$Date), FUN = sum))
+
+C7AnalysisWeather$Travelers <- rownames(C7AnalysisWeather) #Creating new row named "Travelers"
+C7AnalysisWeather$Travelers <- gsub("[.].*","", C7AnalysisWeather$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C7AnalysisWeather <- rename(C7AnalysisWeather, Date = Group.1, Count = x) #Renaming columns
+C7AnalysisWeather <- (C7AnalysisWeather[!C7AnalysisWeather$Count == "",]) #Removing the empty columns in the data-frame.
+C7AnalysisWeather <- na.omit(C7AnalysisWeather)
+
+C1.rect <- data.frame (xmin=min(C7AnalysisWeather$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C7AnalysisWeather$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C7AnalysisWeather, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 7: Weather") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF7 <- mean(C7AnalysisB$Fatalities)/mean(C7AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS7 <- mean(C7AnalysisB$Survivors)/mean(C7AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF7 <- mean(C7AnalysisA$Fatalities)/mean(C7AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS7 <- mean(C7AnalysisA$Survivors)/mean(C7AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C7AnalysisAB_F <- c(BF7,AF7) 
+C7AnalysisAB_S <- c(BS7,AS7)
+
+C7AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C7AnalysisAB_FAS <- data.frame(C7AnalysisAB_D, C7AnalysisAB_F,C7AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C7AnalysisAB_FAS <- rename(C7AnalysisAB_FAS, Fatalities = C7AnalysisAB_F, Survivors = C7AnalysisAB_S, Date = C7AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C7AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C7AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 7: Weather Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2))     
+```
+
+```{r}
+C8Analysis <- Plane[str_detect(Plane$Summary, "[Cc]rew"),] #Grabbing all rows that contain [Cc]rew and putting them into a data-frame
+
+C8AnalysisB <- filter(C8Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C8AnalysisA <- filter(C8Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C8AnalysisB <- na.omit(C8AnalysisB) #Deleting all the NAs from the data-frame
+C8AnalysisA <- na.omit(C8AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C8AnalysisCrew <- rbind(Survivors = aggregate(C8Analysis$Survivors, by = list(C8Analysis$Date), FUN = sum),
+            Aboard = aggregate(C8Analysis$Aboard, by = list(C8Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C8Analysis$Fatalities, by = list(C8Analysis$Date), FUN = sum))
+
+C8AnalysisCrew$Travelers <- rownames(C8AnalysisCrew) #Creating new row named "Travelers"
+C8AnalysisCrew$Travelers <- gsub("[.].*","", C8AnalysisCrew$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C8AnalysisCrew <- rename(C8AnalysisCrew, Date = Group.1, Count = x) #Renaming columns
+C8AnalysisCrew <- (C8AnalysisCrew[!C8AnalysisCrew$Count == "",]) #Removing the empty columns in the data-frame.
+#C8AnalysisCrew <- na.omit(C8AnalysisCrew)
+
+C1.rect <- data.frame (xmin=min(C8AnalysisCrew$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C8AnalysisCrew$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C8AnalysisCrew, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 8: Crew") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF8 <- mean(C8AnalysisB$Fatalities)/mean(C8AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS8 <- mean(C8AnalysisB$Survivors)/mean(C8AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF8 <- mean(C8AnalysisA$Fatalities)/mean(C8AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS8 <- mean(C8AnalysisA$Survivors)/mean(C8AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C8AnalysisAB_F <- c(BF8,AF8) 
+C8AnalysisAB_S <- c(BS8,AS8)
+
+C8AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C8AnalysisAB_FAS <- data.frame(C8AnalysisAB_D, C8AnalysisAB_F,C8AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C8AnalysisAB_FAS <- rename(C8AnalysisAB_FAS, Fatalities = C8AnalysisAB_F, Survivors = C8AnalysisAB_S, Date = C8AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C8AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C8AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 8: Crew Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+
+```{r, Route}
+C9Analysis <- Plane[str_detect(Plane$Summary, "[Rr]oute"),] #Grabbing all rows that contain [Rr]oute and putting them into a data-frame
+
+C9AnalysisB <- filter(C9Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C9AnalysisA <- filter(C9Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C9AnalysisB <- na.omit(C9AnalysisB) #Deleting all the NAs from the data-frame
+C9AnalysisA <- na.omit(C9AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C9AnalysisRoute <- rbind(Survivors = aggregate(C9Analysis$Survivors, by = list(C9Analysis$Date), FUN = sum),
+            Aboard = aggregate(C9Analysis$Aboard, by = list(C9Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C9Analysis$Fatalities, by = list(C9Analysis$Date), FUN = sum))
+
+C9AnalysisRoute$Travelers <- rownames(C9AnalysisRoute) #Creating new row named "Travelers"
+C9AnalysisRoute$Travelers <- gsub("[.].*","", C9AnalysisRoute$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C9AnalysisRoute <- rename(C9AnalysisRoute, Date = Group.1, Count = x) #Renaming columns
+C9AnalysisRoute <- (C9AnalysisRoute[!C9AnalysisRoute$Count == "",]) #Removing the empty columns in the data-frame.
+C9AnalysisRoute <- na.omit(C9AnalysisRoute)
+
+C1.rect <- data.frame (xmin=min(C9AnalysisRoute$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C9AnalysisRoute$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C9AnalysisRoute, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 9: Route") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958")     
+```
+```{r}
+BF9 <- mean(C9AnalysisB$Fatalities)/mean(C9AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS9 <- mean(C9AnalysisB$Survivors)/mean(C9AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF9 <- mean(C9AnalysisA$Fatalities)/mean(C9AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS9 <- mean(C9AnalysisA$Survivors)/mean(C9AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C9AnalysisAB_F <- c(BF9,AF9) 
+C9AnalysisAB_S <- c(BS9,AS9)
+
+C9AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C9AnalysisAB_FAS <- data.frame(C9AnalysisAB_D, C9AnalysisAB_F,C9AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C9AnalysisAB_FAS <- rename(C9AnalysisAB_FAS, Fatalities = C9AnalysisAB_F, Survivors = C9AnalysisAB_S, Date = C9AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C9AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C9AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 9: Route Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+
+```{r}
+C10Analysis <- Plane[str_detect(Plane$Summary, "[Mm]ountain"),] #Grabbing all rows that contain [Rr]oute and putting them into a data-frame
+
+C10AnalysisB <- filter(C10Analysis , Date < "1958-08-23") #Filter dates before the FAA was enacted
+C10AnalysisA <- filter(C10Analysis , Date >= "1958-08-23") #Filter date after the FAA was enacted 
+
+C10AnalysisB <- na.omit(C10AnalysisB) #Deleting all the NAs from the data-frame
+C10AnalysisA <- na.omit(C10AnalysisA) #Deleting all the NAs from the data-frame
+
+#Aggregating Survivors, Aboard and Fatalities into row-bind to allow 3 columns in the data-frame by the date of the event. The group (Survivors, Aboard and Fatalities), date and count.
+C10AnalysisMountain <- rbind(Survivors = aggregate(C10Analysis$Survivors, by = list(C10Analysis$Date), FUN = sum),
+            Aboard = aggregate(C10Analysis$Aboard, by = list(C10Analysis$Date), FUN = sum),
+            Fatalities = aggregate(C10Analysis$Fatalities, by = list(C10Analysis$Date), FUN = sum))
+
+C10AnalysisMountain$Travelers <- rownames(C10AnalysisMountain) #Creating new row named "Travelers"
+C10AnalysisMountain$Travelers <- gsub("[.].*","", C10AnalysisMountain$Travelers) #Removing unnecessary parts of the text from the Travelers column
+
+C10AnalysisMountain <- rename(C10AnalysisMountain, Date = Group.1, Count = x) #Renaming columns
+C10AnalysisMountain <- (C10AnalysisMountain[!C10AnalysisMountain$Count == "",]) #Removing the empty columns in the data-frame.
+#C10AnalysisMountain <- na.omit(C10AnalysisMountain)
+
+C1.rect <- data.frame (xmin=min(C10AnalysisMountain$Date), xmax=as.Date("1958-08-22"), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph before the FAA was enacted (red)
+C2.rect <- data.frame (xmin=as.Date("1958-08-23"), xmax=max(C10AnalysisMountain$Date), ymin= -Inf, ymax = Inf ) #creating a rectangle that shows a section of the graph after the FAA was enacted (green)
+```
+
+```{r}
+ggplot(C10AnalysisMountain, aes(x=Date, y=Count , group=Travelers)) + #Creating a graph with Date on x=axis and count on y-axis
+geom_line(aes(color=Travelers)) + #Creating a line graph based on "Travelers" column
+geom_rect(data=C1.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="red", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate before the FAA was enacted 
+geom_rect(data=C2.rect, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill="green", alpha=0.1, inherit.aes = FALSE) + #adding a rectangle to the graphs to indicate after the FAA was enacted
+ggtitle("Cluster 10: Mountain") + # adding a title to the graph
+theme_classic() + #removing the grid-lines from the graphs
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #moving the graph title to the center
+ylab("Persons") + #changing the y-label
+scale_color_manual(values = c("cornflowerblue", "firebrick1", "limegreen")) + #changing the colors of each of the data lines
+labs(caption = "Red: Before FAA was established in 08-23-1958 \nGreen: After FAA was established in 08-23-1958") 
+```
+
+```{r}
+BF10 <- mean(C10AnalysisB$Fatalities)/mean(C10AnalysisB$Aboard) #Normalizing before FAA Fatalities (Fatalities/Aboard)
+
+BS10 <- mean(C10AnalysisB$Survivors)/mean(C10AnalysisB$Aboard) #Normalizing before FAA Survivors (Survivors/Aboard)
+AF10 <- mean(C10AnalysisA$Fatalities)/mean(C10AnalysisA$Aboard) #Normalizing after FAA Fatalities (Fatalities/Aboard)
+
+AS10 <- mean(C10AnalysisA$Survivors)/mean(C10AnalysisA$Aboard) #Normalizing after FAA Survivors (Survivors/Aboard)
+
+#Creating 2 data-frames Fatalities (before, after) and Survivors (before,after)
+C10AnalysisAB_F <- c(BF10,AF10) 
+C10AnalysisAB_S <- c(BS10,AS10)
+
+C10AnalysisAB_D <- c("Before FAA", "After FAA") #Creating a data-frame that show Before and After FAA
+C10AnalysisAB_FAS <- data.frame(C10AnalysisAB_D, C10AnalysisAB_F,C10AnalysisAB_S) #Putting the "Date", "Fatalities" and "Survivors" for both before and after FAA enacted into 1 data-frame
+
+C10AnalysisAB_FAS <- rename(C10AnalysisAB_FAS, Fatalities = C10AnalysisAB_F, Survivors = C10AnalysisAB_S, Date = C10AnalysisAB_D) #Renaming the the headers of the data-frame
+
+melt(C10AnalysisAB_FAS, id.var = 1) #melting the data-frame to keep the data-frame condensed
+
+ggplot(melt(C10AnalysisAB_FAS, id.var = 1), aes(x=reorder(Date, desc(Date)), y= value, fill=variable)) + 
+geom_col(position="dodge") + #Putting bars next to each other 
+ggtitle("Cluster 10: Mountain Percentages") + #Graph title
+theme_classic() + #removing gridlines
+theme(plot.title = element_text(hjust = 0.5), plot.caption=element_text(hjust = -.15)) + #Moving the title to the center 
+xlab("Date") + #Changing x-label
+ylab("Percentage") + #changing y-label
+scale_fill_manual(values = c("Red","Green")) + #Changing colors on the bars  
+labs(caption = "Date FAA was established: 08-23-1958") +
+geom_text(aes(label=signif(value, 5)), position=position_dodge(width=0.9), vjust=-0.25) + #adding statistic above bar graph to show distinguishability
+scale_y_continuous(limits = c(0.0,1.0) , breaks = seq(0,1.0,.2)) 
+```
+

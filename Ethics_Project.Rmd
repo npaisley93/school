@@ -1,0 +1,1024 @@
+---
+title: "Ethics Project"
+author: "Nicholas Paisley"
+date: "11/27/2020"
+output: html_document
+---
+
+## This is a project based on population, police records and some basic statitiscs. 
+Question: Were people of color given more citations based on Red and/or Blue states (according to the town/state population) during a time with a Blue and Red President. 
+
+## 2012 Red States = ID UT AZ MT WY ND SD NE KS OK TX MO AR LA IN KY TN MS AL GA SC WV AK
+## 2012 Blue States = WA OR CA NV CO NM MN IA WI IL MI OH FL ME VT NH MA CT RI NJ DE MD NY PA VA NC FL
+
+## 2016 Red States = AZ ID UT MT WY ND SD NE KS OK TX IA MO AR LA WI MI IN KY TN MS AL OH GA FL WV PA NC SC AK
+## 2016 Blue States = WA OR CA NV CO NM MN IL NY VA VT NH ME MA RI CT NJ DE MD HI 
+
+##Note: Not all of these states are going to be used because some states either do not have the proper data or no data at all.
+
+#The states that have the data needed are the following : TX, AZ, LA, FL, PA, WA, IL, NV, VT, CA
+```{r}
+getwd()
+```
+
+```{r, package install}
+install.packages('tidyverse', dependencies = TRUE)
+library(tidyverse)
+library(stringr)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r, Texas, San Antonio}
+Texas_SA <- read_csv("tx_san_antonio_2020_04_01.csv")
+class(Texas_SA)
+```
+
+```{r}
+glimpse(Texas_SA)
+```
+
+```{r}
+TXSA_2013 <- Texas_SA %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+TXSA_2017 <- Texas_SA %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(TXSA_2013)
+```
+
+```{r}
+glimpse(TXSA_2017)
+```
+
+```{r}
+unique(TXSA_2013$subject_race)
+```
+
+```{r}
+unique(TXSA_2017$subject_race)
+```
+
+```{r}
+TXSA_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+TXSA_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+TXSA_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+TXSA_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+TXSA_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+TXSA_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+TXSA_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+TXSA_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(TXSA_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(TXSA_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+##Using datausa.io for population/census data
+```{r}
+TXSA_2013B <- (1359033 * (6.76/100)) / 18411
+TXSA_2013B
+TXSA_2013H <- (1359033 * (62.97705/100)) / 86693
+TXSA_2013H
+TXSA_2013API <- (1359033 *(2.64632/100)) / 1972
+TXSA_2013API
+TXSA_2013W <- (1359033 * (26.1/100)) / 74143
+TXSA_2013W
+TXSA_2017B <- (1461623 * (6.48/100))/ 15364
+TXSA_2017B
+TXSA_2017H <- (1461623 *(64.1219/100)) / 73016
+TXSA_2017H
+TXSA_2017API <- (1461623 * (2.52792/100)) / 1529
+TXSA_2017API
+TXSA_2017W <- (1461623 * (24.8/100)) / 54726
+TXSA_2017W
+```
+
+```{r}
+TXSA_POP_PER <- c(TXSA_2013B, TXSA_2017B, TXSA_2013API, TXSA_2017API, TXSA_2013W, TXSA_2017W, TXSA_2013H, TXSA_2017H)
+TXSA_POP_PER_LABEL <- c("TXSA_2013B", "TXSA_2017B", "TXSA_2013API", "TXSA_2017API", "TXSA_2013W", "TXSA_2017W", "TXSA_2013H", "TXSA_2017H")
+par(mar=c(7,3,2,3))
+barplot(TXSA_POP_PER, names.arg = TXSA_POP_PER_LABEL, las=2)
+```
+
+```{r, Texas, Garland}
+TEXAS_GL <- read_csv("tx_garland_2020_04_01.csv")
+class(TEXAS_GL)
+```
+
+```{r}
+glimpse(TEXAS_GL)
+```
+
+```{r}
+TEXAS_GL2013 <- TEXAS_GL %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+TEXAS_GL2017 <- TEXAS_GL %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(TEXAS_GL2013)
+```
+
+```{r}
+glimpse(TEXAS_GL2017)
+```
+
+```{r}
+unique(TEXAS_GL2013$subject_race)
+```
+
+```{r}
+unique(TEXAS_GL2017$subject_race)
+```
+
+```{r}
+TEXAS_GL2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+TEXAS_GL2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+TEXAS_GL2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+TEXAS_GL2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+TEXAS_GL2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+TEXAS_GL2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+TEXAS_GL2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+TEXAS_GL2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(TEXAS_GL2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(TEXAS_GL2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+TXGL_2013B <- (230177 * (11.0/100)) / 6044
+TXGL_2013B
+TXGL_2013H <- (230177 * (35.7/100)) / 11975
+TXGL_2013H
+TXGL_2013API <- (230177 *(5.96/100)) / 1838
+TXGL_2013API
+TXGL_2013W <- (230177 * (16.3/100)) / 12178
+TXGL_2013W
+TXGL_2017B <- (235965 * (8.48/100))/ 5345
+TXGL_2017B
+TXGL_2017H <- (235965 * (36.3/100)) / 11601
+TXGL_2017H
+TXGL_2017API <- (235965 * (7.46/100)) / 2248
+TXGL_2017API
+TXGL_2017W <- (235965 * (32.5/100)) / 11515
+TXGL_2017W
+```
+
+```{r, with other}
+TXGL_POP_PER <- c(TXGL_2013B, TXGL_2017B, TXGL_2013API, TXGL_2017API, TXGL_2013W, TXGL_2017W, TXGL_2013H, TXGL_2017H)
+TXGL_POP_PER_LABEL <- c("TXGL_2013B", "TXGL_2017B", "TXGL_2013API", "TXGL_2017API", "TXGL_2013W", "TXGL_2017W", "TXGL_2013H", "TXGL_2017H")
+par(mar=c(7,3,2,3))
+barplot(TXGL_POP_PER, names.arg = TXGL_POP_PER_LABEL, las=2)
+```
+
+```{r, without Other for Garland}
+TXGL_POP_PER <- c(TXGL_2013B, TXGL_2017B, TXGL_2013API, TXGL_2017API, TXGL_2013W, TXGL_2017W, TXGL_2013H, TXGL_2017H)
+TXGL_POP_PER_LABEL <- c("TXGL_2013B", "TXGL_2017B", "TXGL_2013API", "TXGL_2017API", "TXGL_2013W", "TXGL_2017W", "TXGL_2013H", "TXGL_2017H")
+par(mar=c(7,3,2,3))
+barplot(TXGL_POP_PER, names.arg = TXGL_POP_PER_LABEL, las=2)
+```
+
+```{r, Louisana, New Orleans}
+LANO <- readRDS("yg821jf8611_la_new_orleans_2020_04_01.rds", refhook = NULL)
+class(LANO)
+```
+
+```{r}
+glimpse(LANO)
+```
+
+```{r}
+LANO_2013 <- LANO %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+LANO_2017 <- LANO %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(LANO_2013)
+```
+
+```{r}
+glimpse(LANO_2017)
+```
+
+```{r}
+unique(LANO_2013$subject_race)
+```
+
+```{r}
+unique(LANO_2017$subject_race)
+```
+
+```{r}
+LANO_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+LANO_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+LANO_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+LANO_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+LANO_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+LANO_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+LANO_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+LANO_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(LANO_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(LANO_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+##Using datausa.io for population/census data
+```{r}
+LANO_2013B <- (378623 * (58.9/100)) / 11440
+LANO_2013B
+LANO_2013H <- (378623 * (5.4956/100)) / 456
+LANO_2013H
+LANO_2013API <- (378623 *(3.0282/100)) / 167
+LANO_2013API
+LANO_2013W <- (378623 * (30.9/100)) / 4126
+LANO_2013W
+LANO_2017B <- (391538 * (58.5/100))/ 10988
+LANO_2017B
+LANO_2017H <- (391538 * (5.6698/100)) / 624
+LANO_2017H
+LANO_2017API <- (391538 * (2.91712/100)) / 122
+LANO_2017API
+LANO_2017W <- (391538 * (30.6/100)) / 4141
+LANO_2017W
+```
+
+```{r}
+LANO_POP_PER <- c(LANO_2013B, LANO_2017B, LANO_2013API, LANO_2017API, LANO_2013W, LANO_2017W, LANO_2013H, LANO_2017H)
+LANO_POP_PER_LABEL <- c("LANO_2013B", "LANO_2017B", "LANO_2013API", "LANO_2017API", "LANO_2013W", "LANO_2017W", "LANO_2013H", "LANO_2017H")
+par(mar=c(7,3,2,3))
+barplot(LANO_POP_PER, names.arg = LANO_POP_PER_LABEL, las=2)
+```
+
+```{r, Pennsylvania, Pittsburgh}
+PAPI <- readRDS("yg821jf8611_pa_pittsburgh_2020_04_01.rds", refhook = NULL)
+class(PAPI)
+```
+
+```{r}
+glimpse(PAPI)
+```
+
+```{r}
+PAPI_2013 <- PAPI %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+PAPI_2017 <- PAPI %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(PAPI_2013)
+```
+
+```{r}
+glimpse(PAPI_2017)
+```
+
+```{r}
+unique(PAPI_2013$subject_race)
+```
+
+```{r}
+unique(PAPI_2017$subject_race)
+```
+
+```{r}
+PAPI_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+PAPI_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+PAPI_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+PAPI_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+PAPI_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+PAPI_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+PAPI_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+PAPI_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(PAPI_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(PAPI_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+##Using datausa.io for population/census data
+```{r}
+PAPI_2013B <- (1536704 * (41.8/100)) / 4082
+PAPI_2013B
+PAPI_2013H <- (1536704 * (13.264/100)) / 111
+PAPI_2013H
+PAPI_2013API <- (1536704 *(6.73/100)) / 223
+PAPI_2013API
+PAPI_2013W <- (1536704 * (36.2/100)) / 7767
+PAPI_2013W
+PAPI_2017B <- (1569657 * (40.9/100))/ 3840
+PAPI_2017B
+PAPI_2017H <- (1569657 * (14.8118/100)) / 82
+PAPI_2017H
+PAPI_2017API <- (1569657 * (7.2757/100)) / 202
+PAPI_2017API
+PAPI_2017W <- (1569657 * (34.5/100)) / 4839
+PAPI_2017W
+```
+
+```{r}
+PAPI_POP_PER <- c(PAPI_2013B, PAPI_2017B, PAPI_2013API, PAPI_2017API, PAPI_2013W, PAPI_2017W, PAPI_2013H, PAPI_2017H)
+PAPI_POP_PER_LABEL <- c("PAPI_2013B", "PAPI_2017B", "PAPI_2013API", "PAPI_2017API", "PAPI_2013W", "PAPI_2017W", "PAPI_2013H", "PAPI_2017H")
+par(mar=c(7,3,2,3))
+barplot(PAPI_POP_PER, names.arg = PAPI_POP_PER_LABEL, las=2)
+```
+
+```{r, California, Bakersfield}
+CA_BF <- read_csv("ca_bakersfield_2020_04_01.csv")
+class(CA_BF)
+```
+
+```{r}
+glimpse(CA_BF)
+```
+
+```{r}
+CA_BF_2013 <- CA_BF %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+CA_BF_2017 <- CA_BF %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(CA_BF_2013)
+```
+
+```{r}
+glimpse(CA_BF_2017)
+```
+
+```{r}
+unique(CA_BF_2013$subject_race)
+```
+
+```{r}
+unique(CA_BF_2017$subject_race)
+```
+
+```{r}
+CA_BF_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_BF_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_BF_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_BF_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_BF_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_BF_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_BF_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_BF_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(CA_BF_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(CA_BF_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+##Using datausa.io for population/census data
+```{r}
+CA_BF_2013B <- (363449 * (7.76/100)) /  1485
+CA_BF_2013B
+CA_BF_2013H <- (363449 * (46.561/100)) / 3353
+CA_BF_2013H
+CA_BF_2013API <- (363449 *(7.71/100)) / 286
+CA_BF_2013API
+CA_BF_2013W <- (363449 * (35.9/100)) / 6058
+CA_BF_2013W
+CA_BF_2017B <- (379171 * (7.35/100))/ 1903
+CA_BF_2017B
+CA_BF_2017H <- (379171 * (50.9765/100)) / 8126
+CA_BF_2017H
+CA_BF_2017API <- (379171 * (7.343/100)) / 367
+CA_BF_2017API
+CA_BF_2017W <- (379171 * (31.6/100)) / 6932
+CA_BF_2017W
+```
+
+```{r}
+CA_BF_POP_PER <- c(CA_BF_2013B, CA_BF_2017B, CA_BF_2013API, CA_BF_2017API, CA_BF_2013W, CA_BF_2017W, CA_BF_2013H, CA_BF_2017H)
+CA_BF_POP_PER_LABEL <- c("CA_BF_2013B", "CA_BF_2017B", "CA_BF_2013API", "CA_BF_2017API", "CA_BF_2013W", "CA_BF_2017W", "CA_BF_2013H", "CA_BF_2017H")
+par(mar=c(7,3,2,3))
+barplot(CA_BF_POP_PER, names.arg = CA_BF_POP_PER_LABEL, las=2)
+```
+
+```{r, Nevada, Henderson}
+NV_HD <- readRDS("yg821jf8611_nv_henderson_2020_04_01.rds", refhook = NULL)
+class(NV_HD)
+```
+
+```{r}
+glimpse(NV_HD)
+```
+
+```{r}
+NV_HD_2013 <- NV_HD %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+NV_HD_2017 <- NV_HD %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(NV_HD_2013)
+```
+
+```{r}
+glimpse(NV_HD_2017)
+```
+
+```{r}
+unique(NV_HD_2013$subject_race)
+```
+
+```{r}
+unique(NV_HD_2017$subject_race)
+```
+
+```{r}
+NV_HD_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+NV_HD_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+NV_HD_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+NV_HD_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+NV_HD_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+NV_HD_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+NV_HD_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+NV_HD_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(NV_HD_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(NV_HD_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+##Using datausa.io for population/census data
+```{r}
+NV_HD_2013B <- (268450 * (5.7/100)) / 1575
+NV_HD_2013B
+NV_HD_2013H <- (268450 * (12.0155/100)) / 2561
+NV_HD_2013H
+NV_HD_2013API <- (268450 *(9.183/100)) / 1024
+NV_HD_2013API
+NV_HD_2013W <- (268450 * (69.5/100)) / 13130
+NV_HD_2013W
+NV_HD_2017B <- (299631 * (6.14/100))/ 1892
+NV_HD_2017B
+NV_HD_2017H <- (299631 * (14.664/100)) / 1557
+NV_HD_2017H
+NV_HD_2017API <- (299631 * (10.732/100)) / 735
+NV_HD_2017API
+NV_HD_2017W <- (299631 * (64.9/100)) / 11730
+NV_HD_2017W
+```
+
+```{r}
+NV_HD_POP_PER <- c(NV_HD_2013B, NV_HD_2017B, NV_HD_2013API, NV_HD_2017API, NV_HD_2013W, NV_HD_2017W, NV_HD_2013H, NV_HD_2017H)
+NV_HD_POP_PER_LABEL <- c("NV_HD_2013B", "NV_HD_2017B", "NV_HD_2013API", "NV_HD_2017API", "NV_HD_2013W", "NV_HD_2017W", "NV_HD_2013H", "NV_HD_2017H")
+par(mar=c(7,3,2,3))
+barplot(NV_HD_POP_PER, names.arg = NV_HD_POP_PER_LABEL, las=2)
+```
+
+```{r, Vermont, Burlington}
+VT_BU <- readRDS("yg821jf8611_vt_burlington_2020_04_01.rds", refhook = NULL)
+class(VT_BU)
+```
+
+```{r}
+glimpse(VT_BU)
+```
+
+```{r}
+VT_BU_2013 <- VT_BU %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+VT_BU_2017 <- VT_BU %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(VT_BU_2013)
+```
+
+```{r}
+glimpse(VT_BU_2017)
+```
+
+```{r}
+unique(VT_BU_2013$subject_race)
+```
+
+```{r}
+unique(VT_BU_2017$subject_race)
+```
+
+```{r}
+VT_BU_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+VT_BU_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+VT_BU_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+VT_BU_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+VT_BU_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+VT_BU_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+VT_BU_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+VT_BU_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(VT_BU_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(VT_BU_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+##Using datausa.io for population/census data
+```{r}
+VT_BU_2013B <- (42671 * (3.15/100)) / 119
+VT_BU_2013B
+VT_BU_2013H <- (42671 * (2.4819/100)) / 15
+VT_BU_2013H
+VT_BU_2013API <- (42671 *(5.2089/100)) / 49
+VT_BU_2013API
+VT_BU_2013W <- (42671 * (86.3/100)) / 1774
+VT_BU_2013W
+VT_BU_2017B <- (42364 * (5.47/100))/ 93
+VT_BU_2017B
+VT_BU_2017H <- (42364  * (2.85907/100)) / 17
+VT_BU_2017H
+VT_BU_2017API <- (42364  * (6.2736/100)) / 40
+VT_BU_2017API
+#VT_BU_2017O <- (42364  * (.158/100)) / 0
+VT_BU_2017O <- 0
+VT_BU_2017O
+VT_BU_2017W <- (42364 * (82.7/100)) / 581
+VT_BU_2017W
+```
+
+```{r}
+VT_BU_POP_PER <- c(VT_BU_2013B, VT_BU_2017B, VT_BU_2013API, VT_BU_2017API, VT_BU_2013W, VT_BU_2017W, VT_BU_2013H, VT_BU_2017H)
+VT_BU_POP_PER_LABEL <- c("VT_BU_2013B", "VT_BU_2017B", "VT_BU_2013API", "VT_BU_2017API", "VT_BU_2013W", "VT_BU_2017W", "VT_BU_2013H", "VT_BU_2017H")
+par(mar=c(7,3,2,3))
+barplot(VT_BU_POP_PER, names.arg = VT_BU_POP_PER_LABEL, las=2)
+```
+
+```{r, California, Long Beach}
+CA_LB <- read_csv("ca_long_beach_2020_04_01.csv")
+class(CA_LB)
+```
+
+```{r}
+glimpse(CA_LB)
+```
+
+```{r}
+CA_LB_2013 <- CA_LB %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+CA_LB_2017 <- CA_LB %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(CA_LB_2013)
+```
+
+```{r}
+glimpse(CA_LB_2017)
+```
+
+```{r}
+unique(CA_LB_2013$subject_race)
+```
+
+```{r}
+unique(CA_LB_2017$subject_race)
+```
+
+```{r}
+CA_LB_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_LB_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_LB_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_LB_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_LB_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_LB_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_LB_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+CA_LB_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(CA_LB_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(CA_LB_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+##Using datausa.io for population/census data
+```{r}
+CA_LB_2013B <- (468303 * (12.9/100)) / 8850
+CA_LB_2013B
+CA_LB_2013H <- (468303 * (42.0979/100)) / 14214
+CA_LB_2013H
+CA_LB_2013API <- (468303 *(13.22/100)) / 1030
+CA_LB_2013API
+CA_LB_2013W <- (468303 * (28.7/100)) / 8860
+CA_LB_2013W
+CA_LB_2017B <- (467367 * (12.3/100))/ 5142
+CA_LB_2017B
+CA_LB_2017H <- (467367  * (43.141/100)) / 8428
+CA_LB_2017H
+CA_LB_2017API <- (467367  * (13.9/100)) / 574
+CA_LB_2017API
+CA_LB_2017W <- (467367 * (28.1/100)) / 4185
+CA_LB_2017W
+```
+
+```{r}
+CA_LB_POP_PER <- c(CA_LB_2013B, CA_LB_2017B, CA_LB_2013API, CA_LB_2017API, CA_LB_2013W, CA_LB_2017W, CA_LB_2013H, CA_LB_2017H)
+CA_LB_POP_PER_LABEL <- c("CA_LB_2013B", "CA_LB_2017B", "CA_LB_2013API", "CA_LB_2017API", "CA_LB_2013W", "CA_LB_2017W", "CA_LB_2013H", "CA_LB_2017H")
+par(mar=c(7,3,2,3))
+barplot(CA_LB_POP_PER, names.arg = CA_LB_POP_PER_LABEL, las=2)
+```
+
+```{r, Florida, Tampa}
+FL_TP <- read_csv("fl_tampa_2020_04_01.csv")
+class(FL_TP)
+```
+
+```{r}
+glimpse(FL_TP)
+```
+
+```{r}
+FL_TP_2013 <- FL_TP %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2013-01-01"), as.Date("2013-12-31")))
+FL_TP_2017 <- FL_TP %>% select(date, subject_race, citation_issued) %>% filter(between(date, as.Date("2017-01-01"), as.Date("2017-12-31")))
+```
+
+```{r}
+glimpse(FL_TP_2013)
+```
+
+```{r}
+glimpse(FL_TP_2017)
+```
+
+```{r}
+unique(FL_TP_2013$subject_race)
+```
+
+```{r}
+unique(FL_TP_2017$subject_race)
+```
+
+```{r}
+FL_TP_2013 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+FL_TP_2013 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+FL_TP_2013 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+FL_TP_2013 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+FL_TP_2017 %>% filter(subject_race == "black" , citation_issued == TRUE) 
+```
+
+```{r}
+FL_TP_2017 %>% filter(subject_race == "hispanic" , citation_issued == TRUE) 
+```
+
+```{r}
+FL_TP_2017 %>% filter(subject_race == "asian/pacific islander" , citation_issued == TRUE) 
+```
+
+```{r}
+FL_TP_2017 %>% filter(subject_race == "white" , citation_issued == TRUE) 
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(FL_TP_2013$subject_race), las=2) #las changes the orientation of the tick marks
+```
+
+```{r}
+par(mar=c(8.75,4,2,1)) #changes the margins of the graph (bottom, left, top, right)
+barplot(table(FL_TP_2017$subject_race), las=2) #las changes the orientation of the tick marks
+```
+##Using datausa.io for population/census data
+```{r}
+FL_TP_2013B <- (352426 * (23.5/100)) / 55318
+FL_TP_2013B
+FL_TP_2013H <- (352426 * (23.782/100)) / 14147
+FL_TP_2013H
+FL_TP_2013API <- (352426 *(4.1442/100)) / 1765
+FL_TP_2013API
+FL_TP_2013W <- (352426 * (45.9/100)) / 134912
+FL_TP_2013W
+FL_TP_2017B <- (386577 * (22.1/100))/ 29984
+FL_TP_2017B
+FL_TP_2017H <- (386577 *(26.44/100)) / 16485
+FL_TP_2017H
+FL_TP_2017API <- (386577 * (4.2818/100)) / 2654
+FL_TP_2017API
+FL_TP_2017W <- (386577 * (44.7/100)) / 62745
+FL_TP_2017W
+```
+
+```{r}
+FL_TP_POP_PER <- c(FL_TP_2013B, FL_TP_2017B, FL_TP_2013API, FL_TP_2017API, FL_TP_2013W, FL_TP_2017W, FL_TP_2013H, FL_TP_2017H)
+FL_TP_POP_PER_LABEL <- c("FL_TP_2013B", "FL_TP_2017B", "FL_TP_2013API", "FL_TP_2017API", "FL_TP_2013W", "FL_TP_2017W", "FL_TP_2013H", "FL_TP_2017H")
+par(mar=c(8,3,2,4))
+barplot(FL_TP_POP_PER, names.arg = FL_TP_POP_PER_LABEL, las=2)
+```
+
+```{r}
+par_col <- c("black" , "goldenrod", "green", "blue")
+```
+
+ 
+```{r, Creates graph with variables }
+Y2013 <- c(TXSA_2013B, TXSA_2013H, TXSA_2013API, TXSA_2013W) #numerical variables
+Y2017 <- c(TXSA_2017B, TXSA_2017H, TXSA_2017API, TXSA_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Red to Red: San Antonia, Texas", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+```{r}
+Y2013 <- c(TXGL_2013B, TXGL_2013H, TXGL_2013API, TXGL_2013W) #numerical variables
+Y2017 <- c(TXGL_2017B, TXGL_2017H, TXGL_2017API, TXGL_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Red to Red: Garland, Texas", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+```{r}
+Y2013 <- c(LANO_2013B, LANO_2013H, LANO_2013API, LANO_2013W) #numerical variables
+Y2017 <- c(LANO_2017B, LANO_2017H, LANO_2017API, LANO_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Red to Red: New Orleans, Louisiana", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+```{r}
+Y2013 <- c(PAPI_2013B, PAPI_2013H, PAPI_2013API, PAPI_2013W) #numerical variables
+Y2017 <- c(PAPI_2017B, PAPI_2017H, PAPI_2017API, PAPI_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Blue to Red: Pittsburgh, Pennsylvania", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+```{r}
+Y2013 <- c(NV_HD_2013B, NV_HD_2013H, NV_HD_2013API, NV_HD_2013W) #numerical variables
+Y2017 <- c(NV_HD_2017B, NV_HD_2017H, NV_HD_2017API, NV_HD_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Blue to Blue: Henderson, Nevada", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+```{r}
+Y2013 <- c(VT_BU_2013B, VT_BU_2013H, VT_BU_2013API, VT_BU_2013W) #numerical variables
+Y2017 <- c(VT_BU_2017B, VT_BU_2017H, VT_BU_2017API, VT_BU_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Blue to Blue: Burlington, Vermont", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+
+```{r}
+Y2013 <- c(CA_LB_2013B, CA_LB_2013H, CA_LB_2013API, CA_LB_2013W) #numerical variables
+Y2017 <- c(CA_LB_2017B, CA_LB_2017H, CA_LB_2017API, CA_LB_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Blue to Blue: Long Beach, California", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+```{r}
+Y2013 <- c(CA_BF_2013B, CA_BF_2013H, CA_BF_2013API, CA_BF_2013W) #numerical variables
+Y2017 <- c(CA_BF_2017B, CA_BF_2017H, CA_BF_2017API, CA_BF_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Blue to Blue: Bakersfield, California", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
+
+```{r}
+Y2013 <- c(FL_TP_2013B, FL_TP_2013H, FL_TP_2013API, FL_TP_2013W) #numerical variables
+Y2017 <- c(FL_TP_2017B, FL_TP_2017H, FL_TP_2017API, FL_TP_2017W) #numerical variables
+z <- c(0,0,0,0,1,1,1,1) #left=0, right=1 (x variables)
+par(mar=c(3,8,1,8)) #changes the margins of the graph (bottom, left, top, right)
+plot(z, c(Y2013, Y2017), xaxt="n", ylab="Average", xlab="", xlim=c(-0.5,1.5), main = "Blue to Red: Tampa, Florida", col=1, pch = c("B", "H", "API", "W"))
+axis(side=1, at=c(0,1), c("2013", "2017"))
+segments(rep(0,4), Y2013, rep(1,4), Y2017, col=par_col, lwd =2)
+```
